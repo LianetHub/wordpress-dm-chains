@@ -37,7 +37,7 @@
                     <div class="creating-quiz__body">
                         <div class="creating-quiz__quantity-block quantity-block">
                             <button type="button" class="quantity-block__down icon-minus"></button>
-                            <input type="number" name="quantity" class="quantity-block__input" value="">
+                            <input type="number" name="quantity" class="quantity-block__input" value="1">
                             <button type="button" class="quantity-block__up icon-plus"></button>
                         </div>
                     </div>
@@ -222,11 +222,6 @@
                         }
 
                         $('#product_id_selected').val(productID);
-                        console.log('ajaxProps sent:', {
-                            action: 'get_product_data',
-                            product_id: productID, // Отправляем variation_id как product_id
-                            quantity: state.quantity
-                        });
 
                         $.ajax({
                             url: $form.attr('action'),
@@ -322,29 +317,32 @@
                         alert('Сначала выберите все параметры продукта.');
                         return;
                     }
-                    if (typeof wc_add_to_cart_params === 'undefined' || typeof wc_add_to_cart_params.ajax_url === 'undefined') {
-                        console.error('Скрипты WooCommerce для AJAX корзины не загружены.');
-                        alert('Ошибка: невозможно добавить товар в корзину. Отсутствуют необходимые скрипты.');
-                        return;
-                    }
+
+                    // Использование стандартного WP AJAX URL
+                    const ajaxUrl = typeof ajaxurl !== 'undefined' ? ajaxurl : '<?php echo admin_url('admin-ajax.php'); ?>';
+
                     $.ajax({
-                        url: wc_add_to_cart_params.ajax_url,
+                        url: ajaxUrl,
                         type: 'POST',
                         data: {
-                            action: 'woocommerce_ajax_add_to_cart',
+                            // Правильный экшен для добавления в корзину WooCommerce
+                            action: 'woocommerce_add_to_cart',
                             product_id: productID,
                             quantity: quantity
                         },
                         success: function(response) {
-                            if (!response.error) {
-                                $(document.body).trigger('added_to_cart', [response.fragments, response.cart_hash]);
-                                alert('Товар добавлен в корзину!');
-                            } else {
+                            // В отличие от woocommerce_ajax_add_to_cart, woocommerce_add_to_cart может вернуть не JSON,
+                            // но мы полагаемся на стандартный триггер для обновления корзины.
+                            if (response.error || !response.fragments) {
                                 console.error('Ошибка добавления в корзину:', response);
                                 alert('Ошибка при добавлении в корзину.');
+                            } else {
+                                $(document.body).trigger('added_to_cart', [response.fragments, response.cart_hash]);
+                                alert('Товар добавлен в корзину!');
                             }
                         },
-                        error: function() {
+                        error: function(xhr, status, error) {
+                            console.error('Ошибка при отправке запроса добавления в корзину:', status, error, xhr.responseText);
                             alert('Ошибка при отправке запроса добавления в корзину.');
                         }
                     });

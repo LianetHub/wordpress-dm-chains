@@ -28,10 +28,20 @@ function theme_enqueue_scripts()
 {
 	wp_deregister_script('jquery');
 	wp_enqueue_script('jquery', get_template_directory_uri() . '/assets/js/libs/jquery-3.7.1.min.js', array(), null, true);
-	wp_enqueue_script('swiper-js', get_template_directory_uri() . '/assets/js/libs/swiper-bundle.min.js', array(), null, true);
-	wp_enqueue_script('fancybox-js', get_template_directory_uri() . '/assets/js/libs/fancybox.umd.js', array(), null, true);
-	wp_enqueue_script('intlTelInput-js', get_template_directory_uri() . '/assets/js/libs/intlTelInput.min.js', array(), null, true);
-	wp_enqueue_script('app-js', get_template_directory_uri() . '/assets/js/app.min.js', array(), null, true);
+	wp_enqueue_script('swiper-js', get_template_directory_uri() . '/assets/js/libs/swiper-bundle.min.js', array('jquery'), null, true);
+	wp_enqueue_script('fancybox-js', get_template_directory_uri() . '/assets/js/libs/fancybox.umd.js', array('jquery'), null, true);
+	wp_enqueue_script('intlTelInput-js', get_template_directory_uri() . '/assets/js/libs/intlTelInput.min.js', array('jquery'), null, true);
+
+
+	wp_enqueue_script('app-js', get_template_directory_uri() . '/assets/js/app.min.js', array('jquery'), null, true);
+
+
+	wp_localize_script('app-js', 'custom_ajax_params', array(
+
+		'ajax_url' => admin_url('admin-ajax.php'),
+
+		'cart_nonce' => wp_create_nonce('woocommerce-cart'),
+	));
 }
 add_action('wp_enqueue_scripts', 'theme_enqueue_scripts');
 
@@ -451,6 +461,51 @@ function handle_get_product_data()
 
 	wp_die();
 }
+
+function get_cart_total_custom_ajax()
+{
+	if (! class_exists('WooCommerce')) {
+		wp_send_json_error(array('message' => 'WooCommerce не активен.'));
+		return;
+	}
+
+	if (WC()->cart->is_empty()) {
+		wp_send_json_success(array('total' => '0 ₽', 'cart_is_empty' => true));
+		return;
+	}
+
+	wp_send_json_success(array(
+		'total' => WC()->cart->get_cart_total()
+	));
+}
+
+add_action('wp_ajax_get_cart_total_custom', 'get_cart_total_custom_ajax');
+add_action('wp_ajax_nopriv_get_cart_total_custom', 'get_cart_total_custom_ajax');
+
+function remove_from_cart_ajax()
+{
+	if (! class_exists('WooCommerce') || ! isset($_POST['cart_item_key'])) {
+		wp_send_json_error(array('message' => 'Некорректный запрос.'));
+		return;
+	}
+
+	$cart_item_key = sanitize_text_field($_POST['cart_item_key']);
+
+	if (! check_ajax_referer('woocommerce-cart', 'security', false)) {
+		wp_send_json_error(array('message' => 'Ошибка безопасности (nonce).'));
+		return;
+	}
+
+	$removed = WC()->cart->remove_cart_item($cart_item_key);
+
+	if ($removed) {
+		WC_AJAX::get_refreshed_fragments();
+	} else {
+		wp_send_json_error(array('message' => 'Не удалось удалить товар.'));
+	}
+}
+add_action('wp_ajax_remove_from_cart', 'remove_from_cart_ajax');
+add_action('wp_ajax_nopriv_remove_from_cart', 'remove_from_cart_ajax');
 
 
 // СF7 Settings

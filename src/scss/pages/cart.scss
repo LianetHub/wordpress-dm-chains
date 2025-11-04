@@ -99,6 +99,7 @@
 	}
 	// .cart__item
 	&__item {
+		position: relative;
 		display: flex;
 		padding: rem(23);
 		gap: rem(20);
@@ -171,6 +172,25 @@
 			bottom: rem(-14);
 			right: rem(-14);
 			font-size: 3rem;
+		}
+	}
+	// .cart__item-remove
+	&__item-remove {
+		position: absolute;
+		top: 0;
+		right: 0;
+
+		width: rem(48);
+		height: rem(48);
+		font-size: 1.5rem;
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		transition: color 0.3s ease;
+		@media (any-hover: hover) {
+			&:hover {
+				color: $red;
+			}
 		}
 	}
 }
