@@ -1,7 +1,9 @@
 <?php
 defined('ABSPATH') || exit;
 ?>
-
+<?php
+global $woocommerce;
+?>
 <div class="cart">
     <div class="container">
         <div class="cart__body">
@@ -19,7 +21,7 @@ defined('ABSPATH') || exit;
                     Итого стоимость товаров:
                 </div>
                 <div class="cart__total-price">
-                    0 ₽
+                    <?php echo $woocommerce->cart->get_cart_total(); ?>
                 </div>
                 <button data-fancybox data-src="#order" disabled class="cart__total-btn btn btn-primary">Оформить заказ</button>
             </div>

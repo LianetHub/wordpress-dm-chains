@@ -54,7 +54,7 @@
                                         <?php echo implode(', ', $attr_html); ?>
                                     </div>
                                     <div class="cart__item-calc">
-                                        <?php echo $formatted_unit_price; ?> х **<?php echo $quantity; ?>**
+                                        <?php echo $formatted_unit_price; ?> х <?php echo $quantity; ?>
                                     </div>
                                 </div>
                                 <div class="cart__item-quantity quantity-block">
@@ -67,23 +67,31 @@
 
                         <?php endforeach;
                     else : ?>
-                        <p class="cart-empty-message">Ваша корзина пуста.</p>
+                        <div class="cart__empty">
+                            <div class="cart__empty-title title text-center">
+                                Ваша корзина пуста <span class="text-nowrap">:(</span> <br>
+                                Почему бы это не исправить?
+                            </div>
+                            <a href="<?php echo get_permalink(65); ?>" class="cart__empty-btn btn btn-primary btn-lg">Создать цепь</a>
+                        </div>
                     <?php endif; ?>
                 </div>
             </div>
 
-            <div class="cart__total">
+            <div class="cart__total ">
                 <div class="cart__total-title">
                     Итого стоимость товаров:
                 </div>
                 <div class="cart__total-price" id="cart-total-price">
                     <?php echo $woocommerce->cart->get_cart_total(); ?>
                 </div>
-                <?php if (!$cart_is_empty) : ?>
-                    <button data-fancybox data-src="#order" class="cart__total-btn btn btn-primary">Оформить заказ</button>
-                <?php else : ?>
-                    <a href="<?php echo esc_url(get_permalink(wc_get_page_id('shop'))); ?>" class="cart__total-btn btn btn-primary">Перейти в каталог</a>
-                <?php endif; ?>
+                <button
+                    data-fancybox
+                    <?php if ($cart_is_empty) : ?>
+                    disabled
+                    <?php endif; ?>
+                    data-src="#order"
+                    class="cart__total-btn btn btn-primary">Оформить заказ</button>
             </div>
         </div>
     </div>
@@ -95,28 +103,20 @@
 </div>
 
 <script>
-    jQuery(function($) {
-
+    $(function() {
         const ajaxUrl = custom_ajax_params.ajax_url;
         const cartNonce = custom_ajax_params.cart_nonce;
 
-        function updateCartTotalsDisplay(response) {
-            if (response && response.fragments) {
-                $.each(response.fragments, function(key, value) {
-                    $(key).replaceWith(value);
-                });
-                if (response.fragments['.woocommerce-cart-form']) {
-                    getNewCartTotal();
-                }
-            } else {
-                getNewCartTotal();
-            }
-
-            if (typeof Fancybox !== 'undefined') {
-                Fancybox.bind("[data-fancybox]", {});
-            }
+        /**
+         * Обновление суммы корзины
+         */
+        function updateCartTotalDisplay(totalHtml) {
+            $('#cart-total-price').html(totalHtml);
         }
 
+        /**
+         * Обновление суммы корзины через AJAX
+         */
         function getNewCartTotal() {
             $.ajax({
                 url: ajaxUrl,
@@ -126,21 +126,25 @@
                 },
                 success: function(response) {
                     if (response.success && response.data && response.data.total) {
-                        $('#cart-total-price').html(response.data.total);
-                    } else {
-                        if (response.data && response.data.cart_is_empty) {
-                            location.reload();
-                        }
+                        updateCartTotalDisplay(response.data.total);
+                    } else if (response.data && response.data.cart_is_empty) {
+                        location.reload();
                     }
+                },
+                complete: function() {
+                    $('.cart__total').removeClass('loading');
                 }
             });
         }
 
+        /**
+         * Кнопки +/- для изменения количества
+         */
         $('.cart__items').on('click', '.quantity-block__up, .quantity-block__down', function(e) {
             e.preventDefault();
+
             const $button = $(this);
             const $input = $button.siblings('.quantity-block__input');
-            const cartKey = $input.data('cart-key');
             let currentQuantity = parseInt($input.val()) || 1;
             const isPlus = $button.data('action') === 'plus';
 
@@ -155,12 +159,19 @@
             $input.val(currentQuantity).trigger('change');
         });
 
+        /**
+         * Изменение количества вручную
+         */
         $('.cart__items').on('change', '.quantity-block__input', function() {
             const $input = $(this);
             const cartKey = $input.data('cart-key');
             const newQuantity = parseInt($input.val()) || 1;
 
-            $input.closest('.cart__item').addClass('updating-cart');
+            const $item = $input.closest('.cart__item');
+            const $total = $('.cart__total');
+
+            $item.addClass('updating-cart');
+            $total.addClass('loading');
 
             $.ajax({
                 url: ajaxUrl,
@@ -172,75 +183,81 @@
                     security: cartNonce
                 },
                 success: function(response) {
-                    if (response.success) {
-                        const $item = $input.closest('.cart__item');
-                        const new_unit_price = response.data.new_price;
-                        const new_subtotal = response.data.new_subtotal;
+                    if (response.success && response.data) {
+                        const newUnitPrice = response.data.new_price;
+                        const totalHtml = response.data.total;
 
-                        if (new_unit_price) {
-                            $item.find('.cart__item-calc').html(`${new_unit_price} х **${newQuantity}**`);
+                        if (newUnitPrice) {
+                            $item.find('.cart__item-calc')
+                                .html(`${newUnitPrice} х <strong>${newQuantity}</strong>`);
                         }
 
-                        updateCartTotalsDisplay(response);
-
+                        if (totalHtml) {
+                            updateCartTotalDisplay(totalHtml);
+                        }
                     } else {
                         alert('Не удалось обновить количество товара.');
                         location.reload();
                     }
                 },
                 complete: function() {
-                    $input.closest('.cart__item').removeClass('updating-cart');
+                    $item.removeClass('updating-cart');
+                    $total.removeClass('loading');
                 }
             });
         });
 
+        /**
+         * Удаление товара
+         */
         $('.cart__items').on('click', '.cart__item-remove', function(e) {
             e.preventDefault();
+
             const $item = $(this).closest('.cart__item');
             const cartKey = $item.data('cart-key');
-            const removeUrl = $(this).attr('href');
+            const $total = $('.cart__total');
 
             $item.addClass('deleting-cart');
+            $total.addClass('loading');
 
             $.ajax({
-                url: removeUrl,
-                type: 'GET',
+                url: ajaxUrl,
+                type: 'POST',
+                data: {
+                    action: 'remove_from_cart',
+                    cart_item_key: cartKey,
+                    security: cartNonce
+                },
                 success: function(response) {
+                    if (response.success) {
+                        $item.fadeOut(300, function() {
+                            $(this).remove();
 
-                    $.ajax({
-                        url: ajaxUrl,
-                        type: 'POST',
-                        data: {
-                            action: 'remove_from_cart',
-                            cart_item_key: cartKey,
-                            security: cartNonce
-                        },
-                        success: function(response) {
-                            if (response.success) {
-                                $item.fadeOut(300, function() {
-                                    $(this).remove();
-                                    updateCartTotalsDisplay(response);
-
-                                    if ($('.cart__item').length === 0) {
-                                        location.reload();
-                                    }
-                                });
+                            if (response.data && response.data.total) {
+                                updateCartTotalDisplay(response.data.total);
                             } else {
-                                alert('Не удалось удалить товар.');
-                                $item.removeClass('deleting-cart');
+                                getNewCartTotal();
                             }
-                        },
-                        error: function() {
-                            alert('Ошибка AJAX при удалении товара.');
-                            $item.removeClass('deleting-cart');
-                        }
-                    });
+
+                            if ($('.cart__item').length === 0) {
+                                location.reload();
+                            }
+                        });
+                    } else {
+                        alert(response.data?.message || 'Не удалось удалить товар.');
+                        $item.removeClass('deleting-cart');
+                    }
                 },
                 error: function() {
-                    alert('Ошибка при удалении товара (первый запрос).');
+                    alert('Ошибка AJAX при удалении товара.');
                     $item.removeClass('deleting-cart');
+                },
+                complete: function() {
+                    $total.removeClass('loading');
                 }
             });
         });
+
+
     });
 </script>

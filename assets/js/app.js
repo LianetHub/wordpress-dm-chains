@@ -65,6 +65,28 @@ $(function () {
     });
 
 
+    // scroll to policy
+
+    const hash = decodeURIComponent(window.location.hash);
+    if (hash && hash.startsWith('#policy-')) {
+        const $target = $(hash);
+        if ($target.length) {
+            const $caption = $target.find('.policy__caption');
+            const $content = $target.find('.policy__content');
+
+
+            if ($content.is(':hidden')) {
+                $caption.addClass('active');
+                $content.stop().slideDown(300);
+            }
+
+
+            $('html, body').animate({
+                scrollTop: $target.offset().top
+            }, 600);
+        }
+    }
+
     //  sliders
 
     if ($('.promo').length) {
