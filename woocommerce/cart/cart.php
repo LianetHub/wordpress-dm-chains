@@ -160,7 +160,7 @@
         });
 
         /**
-         * Изменение количества вручную
+         * Изменение количества
          */
         $('.cart__items').on('change', '.quantity-block__input', function() {
             const $input = $(this);

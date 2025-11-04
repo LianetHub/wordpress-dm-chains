@@ -72,14 +72,15 @@
             </div>
         </form>
         <script>
-            const chainConfig = <?php
-                                $product_id = 127;
-                                $rows = get_chain_combinations_data($product_id);
-                                $config = build_chain_config($rows);
-                                echo json_encode($config);
-                                ?>;
+            $(function() {
 
-            jQuery(function($) {
+                const chainConfig = <?php
+                                    $product_id = 127;
+                                    $rows = get_chain_combinations_data($product_id);
+                                    $config = build_chain_config($rows);
+                                    echo json_encode($config);
+                                    ?>;
+
                 const chainConfigurator = {
                     data: chainConfig,
                     state: {
@@ -89,9 +90,7 @@
                         quantity: 1,
                         currentStep: 1
                     },
-                    selectedProduct: null,
-                    availabilityChecked: false,
-                    available: false
+                    selectedProduct: null
                 };
 
                 const $form = $('.creating-block__content');
@@ -100,46 +99,49 @@
                 const $quantityInput = $('.quantity-block__input');
                 const $addToCartButton = $('.creating-block__product-add-to-cart');
 
+                // -------------------
+                // Функции конфигуратора
+                // -------------------
                 function updateState(key, value) {
                     const keyIndex = stepKeys.indexOf(key);
                     const isValueChanging = chainConfigurator.state[key] !== value;
                     chainConfigurator.state[key] = value;
+
                     if (keyIndex < 3 && isValueChanging) {
                         for (let i = keyIndex + 1; i < stepKeys.length - 1; i++) {
                             chainConfigurator.state[stepKeys[i]] = null;
                             $quizItems.eq(i).find('.creating-quiz__body').empty();
                         }
                         chainConfigurator.selectedProduct = null;
-                        $('.creating-block__product-image').html('<img src="<?php echo get_template_directory_uri(); ?>/assets/img/chains/pitch.png" alt="Фото цепи">');
-                        $('.creating-block__product-price').html('Цена за шт.:______________');
-                        $addToCartButton.prop('disabled', true);
-                        $('#product_id_selected').val('');
+                        resetProductDisplay();
                     } else if (key === 'quantity') {
                         if (chainConfigurator.selectedProduct) {
                             findCombinationAndPrice(true);
                         }
                     }
+
                     updateResultsDisplay();
                 }
 
                 function getFilteredOptions(stepKey) {
                     const options = chainConfigurator.data.steps[stepKey].options;
                     const state = chainConfigurator.state;
-                    if (stepKey === 'pitch' || stepKey === 'quantity') {
-                        return options;
-                    }
+                    if (stepKey === 'pitch' || stepKey === 'quantity') return options;
+
                     if (stepKey === 'thickness') {
                         const availableThicknesses = chainConfigurator.data.combinations
                             .filter(item => item.pitch === state.pitch)
                             .map(item => item.thickness);
                         return options.filter(opt => availableThicknesses.includes(opt.value));
                     }
+
                     if (stepKey === 'class') {
                         const availableClasses = chainConfigurator.data.combinations
                             .filter(item => item.pitch === state.pitch && item.thickness === state.thickness)
                             .map(item => item.class);
                         return options.filter(opt => availableClasses.includes(opt.value));
                     }
+
                     return options;
                 }
 
@@ -155,11 +157,11 @@
                         const checked = option.value === chainConfigurator.state[stepKey] ? 'checked' : '';
                         const label = option.label || option.value;
                         html += `
-                            <label class="radio-btn">
-                                <input type="radio" name="${stepKey}" value="${option.value}" class="radio-btn__input hidden" hidden ${checked}>
-                                <span class="radio-btn__btn">${label}</span>
-                            </label>
-                        `;
+                <label class="radio-btn">
+                    <input type="radio" name="${stepKey}" value="${option.value}" class="radio-btn__input hidden" hidden ${checked}>
+                    <span class="radio-btn__btn">${label}</span>
+                </label>
+            `;
                     });
                     $body.html(html + '</div>');
                 }
@@ -169,15 +171,13 @@
                     const $currentStepEl = $quizItems.eq(stepIndex - 1);
                     $currentStepEl.addClass('active');
                     chainConfigurator.state.currentStep = stepIndex;
+
                     if (stepIndex <= 3) {
                         const stepKey = stepKeys[stepIndex - 1];
                         renderStepOptions(stepKey, $currentStepEl.find('.creating-quiz__body'));
                     }
-                    if (stepIndex < 4 || !chainConfigurator.selectedProduct) {
-                        $addToCartButton.prop('disabled', true);
-                    } else if (chainConfigurator.selectedProduct) {
-                        $addToCartButton.prop('disabled', false);
-                    }
+
+                    $addToCartButton.prop('disabled', !(chainConfigurator.selectedProduct && stepIndex >= 4));
                 }
 
                 function updateResultsDisplay() {
@@ -197,10 +197,10 @@
                     if (!state.pitch || !state.thickness || !state.class) {
                         chainConfigurator.selectedProduct = null;
                         $('#product_id_selected').val('');
-                        $('.creating-block__product-price').html('Цена за шт.:______________');
-                        $addToCartButton.prop('disabled', true);
+                        resetProductDisplay();
                         return;
                     }
+
                     const selectedProduct = chainConfigurator.data.combinations.find(item =>
                         item.pitch === state.pitch &&
                         item.thickness === state.thickness &&
@@ -209,13 +209,11 @@
 
                     if (selectedProduct) {
                         chainConfigurator.selectedProduct = selectedProduct;
-
-                        // ИСПОЛЬЗУЕМ variation_id ВМЕСТО product_id
                         const productID = selectedProduct.variation_id;
 
-                        if (typeof productID === 'undefined' || productID === null || productID === '') {
-                            console.error('Ошибка: variation_id не определен для найденной комбинации.');
-                            $('.creating-block__product-price').html('Цена за шт.: **Ошибка ID**');
+                        if (!productID) {
+                            console.error('Ошибка: variation_id не определен.');
+                            $('.creating-block__product-price').html('Цена за шт.: Ошибка ID');
                             $addToCartButton.prop('disabled', true);
                             $('#product_id_selected').val('');
                             return;
@@ -235,8 +233,8 @@
                                 if (response.success && response.data) {
                                     updateProductDisplay(response.data, selectedProduct);
                                 } else {
-                                    console.error('Ошибка WC AJAX (нет данных/нет успеха):', response);
-                                    $('.creating-block__product-price').html('Цена за шт.: **Нет в наличии**');
+                                    console.error('Ошибка WC AJAX:', response);
+                                    $('.creating-block__product-price').html('Нет в наличии');
                                     $addToCartButton.prop('disabled', true);
                                     $('#product_id_selected').val('');
                                 }
@@ -248,7 +246,7 @@
                         });
                     } else {
                         chainConfigurator.selectedProduct = null;
-                        $('.creating-block__product-price').html('Цена за шт.: **Комбинация недоступна**');
+                        $('.creating-block__product-price').html('Комбинация недоступна');
                         $addToCartButton.prop('disabled', true);
                         $('#product_id_selected').val('');
                     }
@@ -256,101 +254,118 @@
 
                 function updateProductDisplay(productData, selected) {
                     const $productBlock = $('.creating-block__product');
-                    // Используем заглушку, если image не пришел
                     const imageSrc = selected.image && selected.image !== '' ? selected.image : '<?php echo get_template_directory_uri(); ?>/assets/img/chains/pitch.png';
 
-                    $productBlock.find('.creating-block__product-image').html(
-                        `<img src="${imageSrc}" alt="Цепь">`
-                    );
-
-                    $productBlock.find('.creating-block__product-price').html(
-                        `Цена за шт.: **${productData.price_html}**`
-                    );
+                    $productBlock.find('.creating-block__product-image').html(`<img src="${imageSrc}" alt="Цепь">`);
+                    $productBlock.find('.creating-block__product-price').html(`Цена за шт.: ${productData.price_html}`);
                     if (chainConfigurator.state.currentStep >= 4) {
                         $addToCartButton.prop('disabled', false);
                     }
                 }
 
+                function resetProductDisplay() {
+                    $('.creating-block__product-image').html('<img src="<?php echo get_template_directory_uri(); ?>/assets/img/chains/pitch.png" alt="Фото цепи">');
+                    $('.creating-block__product-price').html('Цена за шт.:______________');
+                    $addToCartButton.prop('disabled', true);
+                }
+
+                function resetConfigurator() {
+                    chainConfigurator.state = {
+                        pitch: null,
+                        thickness: null,
+                        class: null,
+                        quantity: 1,
+                        currentStep: 1
+                    };
+                    chainConfigurator.selectedProduct = null;
+                    $quizItems.find('.creating-quiz__body').empty();
+                    $quantityInput.val(1);
+                    $('#product_id_selected').val('');
+                    resetProductDisplay();
+                    renderStep(1);
+                    updateResultsDisplay();
+                }
+
+                // -------------------
+                // События
+                // -------------------
                 $('.creating-block__quiz').on('change', 'input[type="radio"]', function() {
                     const $input = $(this);
                     const stepKey = $input.attr('name');
                     const newValue = $input.val();
                     const currentStepIndex = $quizItems.index($input.closest('.creating-quiz__item')) + 1;
                     updateState(stepKey, newValue);
-                    let nextStepIndex = currentStepIndex + 1;
-                    if (stepKey === 'class') {
-                        findCombinationAndPrice();
-                    }
-                    if (nextStepIndex <= $quizItems.length) {
-                        renderStep(nextStepIndex);
-                    }
+                    if (stepKey === 'class') findCombinationAndPrice();
+
+                    const nextStepIndex = currentStepIndex + 1;
+                    if (nextStepIndex <= $quizItems.length) renderStep(nextStepIndex);
                 });
 
                 $('.creating-quiz__back').on('click', function() {
-                    const $currentStepEl = $(this).closest('.creating-quiz__item');
-                    const currentStepIndex = $quizItems.index($currentStepEl) + 1;
-                    if (currentStepIndex > 1) {
-                        renderStep(currentStepIndex - 1);
-                    }
+                    const currentStepIndex = $quizItems.index($(this).closest('.creating-quiz__item')) + 1;
+                    if (currentStepIndex > 1) renderStep(currentStepIndex - 1);
                 });
 
                 $('.quantity-block').on('click', '.quantity-block__up, .quantity-block__down', function() {
                     let currentQuantity = parseInt($quantityInput.val()) || 1;
                     const isPlus = $(this).hasClass('icon-plus');
-                    if (isPlus) {
-                        currentQuantity++;
-                    } else if (currentQuantity > 1) {
-                        currentQuantity--;
-                    }
+                    if (isPlus) currentQuantity++;
+                    else if (currentQuantity > 1) currentQuantity--;
                     $quantityInput.val(currentQuantity);
                     updateState('quantity', currentQuantity);
-                    if (chainConfigurator.selectedProduct) {
-                        findCombinationAndPrice(true);
-                    }
+                    if (chainConfigurator.selectedProduct) findCombinationAndPrice(true);
                 });
 
+                // -------------------
+                // AJAX добавление в корзину
+                // -------------------
                 $addToCartButton.on('click', function(e) {
                     e.preventDefault();
                     const productID = $('#product_id_selected').val();
                     const quantity = chainConfigurator.state.quantity;
+
                     if (!productID) {
                         alert('Сначала выберите все параметры продукта.');
                         return;
                     }
 
-                    // Использование стандартного WP AJAX URL
                     const ajaxUrl = typeof ajaxurl !== 'undefined' ? ajaxurl : '<?php echo admin_url('admin-ajax.php'); ?>';
 
                     $.ajax({
                         url: ajaxUrl,
                         type: 'POST',
                         data: {
-                            // Правильный экшен для добавления в корзину WooCommerce
                             action: 'woocommerce_add_to_cart',
                             product_id: productID,
                             quantity: quantity
                         },
                         success: function(response) {
-                            // В отличие от woocommerce_ajax_add_to_cart, woocommerce_add_to_cart может вернуть не JSON,
-                            // но мы полагаемся на стандартный триггер для обновления корзины.
                             if (response.error || !response.fragments) {
                                 console.error('Ошибка добавления в корзину:', response);
                                 alert('Ошибка при добавлении в корзину.');
                             } else {
+                                if (response.fragments && response.fragments['a.header__cart']) {
+                                    $('a.header__cart').replaceWith(response.fragments['a.header__cart']);
+                                } else {
+                                    const count = parseInt($('.header__cart').data('quantity')) || 0;
+                                    $('.header__cart').data('quantity', count + quantity).attr('data-quantity', count + quantity);
+                                }
+
+                                resetConfigurator();
+
                                 $(document.body).trigger('added_to_cart', [response.fragments, response.cart_hash]);
-                                alert('Товар добавлен в корзину!');
                             }
                         },
                         error: function(xhr, status, error) {
-                            console.error('Ошибка при отправке запроса добавления в корзину:', status, error, xhr.responseText);
-                            alert('Ошибка при отправке запроса добавления в корзину.');
+                            console.error('Ошибка при добавлении в корзину:', status, error, xhr.responseText);
+                            alert('Ошибка при добавлении в корзину.');
                         }
                     });
                 });
 
                 renderStep(1);
                 updateResultsDisplay();
-            })
+            });
         </script>
     </div>
 </div>
