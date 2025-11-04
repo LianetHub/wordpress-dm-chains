@@ -1,0 +1,50 @@
+%ic {
+	font-family: "icons";
+	font-style: normal;
+	font-weight: normal;
+	font-variant: normal;
+	text-transform: none;
+	line-height: 1;
+	speak: never;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+}
+
+[class^="icon-"],
+[class*=" icon-"] {
+	&:before {
+		@extend %ic;
+		display: block;
+	}
+}
+
+.icon-cart:before {
+	content: "\e900";
+}
+.icon-check:before {
+	content: "\e901";
+}
+.icon-chevron:before {
+	content: "\e902";
+}
+.icon-close:before {
+	content: "\e903";
+}
+.icon-minus:before {
+	content: "\e904";
+}
+.icon-next:before {
+	content: "\e905";
+}
+.icon-plus:before {
+	content: "\e906";
+}
+.icon-prev:before {
+	content: "\e907";
+}
+.icon-telegram:before {
+	content: "\e908";
+}
+.icon-whatsapp:before {
+	content: "\e909";
+}

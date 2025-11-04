@@ -1,0 +1,349 @@
+@use "sass:color";
+@use "sass:math";
+@use "mixins" as *;
+@use "variables" as *;
+@use "fonts";
+@use "icons";
+
+//============ МОДУЛИ ====================
+@use "modules/popup";
+// @import "modules/breadcrumbs";
+// @import "modules/select";
+// @import "modules/pagination";
+// @import "modules/phone-input";
+
+//============ МОДУЛИ ====================
+
+.title-xl {
+	font-weight: 700;
+	font-weight: 700;
+	font-size: 3rem;
+	@media (min-width: $md3) {
+		font-size: 3.75rem;
+	}
+	@media (min-width: $md1) {
+		font-size: 5rem;
+	}
+}
+
+.title {
+	font-weight: 700;
+	font-size: 2.75rem;
+	@media (min-width: $md3) {
+		line-height: 1.4;
+		font-size: 3.75rem;
+	}
+	@media (min-width: $md1) {
+		font-size: 4.375rem;
+	}
+}
+
+.title-md {
+	font-weight: 700;
+	font-size: 2.5rem;
+	@media (min-width: $md2) {
+		font-size: 3rem;
+	}
+	@media (min-width: $md1) {
+		font-size: 3.5rem;
+	}
+	@media (min-width: $md0) {
+		font-size: 3.75rem;
+	}
+}
+
+.title-sm {
+	font-weight: 700;
+	font-size: 2rem;
+	@media (min-width: $md3) {
+		font-size: 2.5rem;
+		line-height: 1.4;
+	}
+	@media (min-width: $md1) {
+		font-size: 3.125rem;
+	}
+}
+
+.text-center {
+	text-align: center;
+}
+
+.text-nowrap {
+	white-space: nowrap;
+}
+
+.swiper-pagination {
+	position: static;
+	margin-top: 1rem;
+	.swiper-pagination-bullet {
+		position: relative;
+		border-radius: 0;
+		width: rem(25);
+		height: rem(43);
+		opacity: 1;
+		clip-path: polygon(0 0, 0% 100%, 100% 0);
+		background: #f4f8f4;
+
+		&::before {
+			content: "";
+			position: absolute;
+			inset: rem(3) rem(6) rem(10) rem(3);
+			clip-path: polygon(0 0, 0% 100%, 100% 0);
+			background: $dark;
+			opacity: 0;
+		}
+		&:nth-child(even) {
+			clip-path: polygon(0 100%, 100% 100%, 100% 0);
+			margin-left: -1.25rem;
+			&:not(:last-child) {
+				margin-right: rem(15);
+			}
+			&::before {
+				inset: rem(10) rem(3) rem(3) rem(6);
+				clip-path: polygon(0 100%, 100% 100%, 100% 0);
+			}
+		}
+		&.swiper-pagination-bullet-active {
+			&::before {
+				opacity: 1;
+			}
+		}
+	}
+}
+
+// .uppercase-mobile {
+// 	@media (max-width: $md4) {
+// 		text-transform: uppercase;
+// 	}
+// }
+
+// .desktop-only {
+// 	@media (max-width: $md2) {
+// 		display: none;
+// 	}
+// }
+
+// .mobile-only {
+// 	@media (min-width: $md4) {
+// 		display: none;
+// 	}
+// }
+
+// .tablet-only {
+// 	@media (min-width: $md2) {
+// 		display: none;
+// 	}
+// }
+
+// .pagination {
+// 	display: flex;
+// 	justify-content: center;
+// 	gap: 0.63rem;
+// 	// .pagination__btn
+// 	&__btn {
+// 		line-height: 1.6;
+// 		font-size: 1rem;
+// 		color: #fff;
+// 		@media (min-width: $md4) {
+// 			font-size: 1.125rem;
+// 			padding: 0.75rem 0.88rem;
+// 		}
+// 		&:first-child {
+// 			@media (min-width: $md4) {
+// 				margin-right: 1.87rem;
+// 			}
+// 			display: flex;
+// 			justify-content: center;
+// 			align-items: center;
+// 			&::before {
+// 				@extend %ic, .icon-chevron;
+
+// 				transform: rotate(180deg);
+// 			}
+// 		}
+// 		&:last-child {
+// 			display: flex;
+// 			justify-content: center;
+// 			align-items: center;
+// 			@media (min-width: $md4) {
+// 				margin-left: 1.87rem;
+// 			}
+// 			&::before {
+// 				@extend %ic, .icon-chevron;
+// 			}
+// 		}
+// 		transition: color 0.3s ease 0s;
+// 		color: #fff;
+// 		@media (min-width: $md4) {
+// 			color: #9aa2a9;
+// 		}
+// 		@media (any-hover: hover) {
+// 			&:hover {
+// 				color: #fff;
+// 			}
+// 		}
+// 		&::before {
+// 			@media (min-width: $md4) {
+// 				display: none;
+// 			}
+// 		}
+// 		& span {
+// 			display: none;
+// 			font-size: 1rem;
+// 			@media (min-width: $md4) {
+// 				display: block;
+// 			}
+// 		}
+// 		&[aria-disabled="true"] {
+// 			pointer-events: none;
+// 			color: #9aa2a9;
+// 		}
+// 	}
+// 	// .pagination__item
+// 	&__item {
+// 		justify-content: center;
+// 		align-items: center;
+// 		display: none;
+// 		width: 2.5rem;
+// 		height: 2.5rem;
+// 		font-size: 0.66575rem;
+// 		@media (min-width: $md4) {
+// 			width: 2.875rem;
+// 			height: 2.875rem;
+// 			font-size: 0.875rem;
+// 			display: flex;
+// 		}
+// 		@media (min-width: $md2) {
+// 			font-size: 1rem;
+// 			width: 3.5rem;
+// 			height: 3.5rem;
+// 		}
+// 		flex-shrink: 0;
+
+// 		border-radius: 50%;
+// 		border: 1px solid rgba($color: #fff, $alpha: 0.3);
+// 		color: #fff;
+// 		&[href] {
+// 			transition: border-color 0.3s ease 0s, background-color 0.3s ease 0s, color 0.3s ease 0s;
+// 			@media (any-hover: hover) {
+// 				&:hover {
+// 					border-color: #fff;
+// 					background: #fff;
+// 					color: $dark;
+// 				}
+// 			}
+// 		}
+// 		&.active {
+// 			border-color: #fff;
+// 			background: #fff;
+// 			color: $dark;
+// 			display: flex;
+// 			& + * {
+// 				display: flex;
+// 				& + * {
+// 					display: flex;
+// 				}
+// 			}
+// 			& ~ :nth-last-child(2),
+// 			& ~ :nth-last-child(3) {
+// 				display: flex;
+// 			}
+// 		}
+// 	}
+// }
+
+// ._loading {
+// 	color: transparent;
+// 	&::after {
+// 		content: "";
+// 		position: absolute;
+// 		top: 50%;
+// 		left: 50%;
+// 		transform: translate(-50%, -50%);
+// 		width: 20px;
+// 		height: 20px;
+// 		border: 3px solid #fff;
+// 		border-bottom-color: transparent;
+// 		border-radius: 50%;
+// 		transform-origin: center;
+// 		animation: rotation 1s linear infinite;
+// 		z-index: 3;
+// 	}
+// }
+
+// @keyframes rotation {
+// 	0% {
+// 		transform: translate(-50%, -50%) rotate(0deg);
+// 	}
+// 	100% {
+// 		transform: translate(-50%, -50%) rotate(360deg);
+// 	}
+// }
+
+//============ ОБЩИЕ ЭЛЕМЕНТЫ ============
+
+// Стилизация селекта
+// $selectBg: $orange;
+// $selectColor: $dark;
+
+// ::-moz-selection {
+// 	color: $selectColor;
+// 	background-color: $selectBg;
+// 	box-shadow: none;
+// }
+// ::selection {
+// 	color: $selectColor;
+// 	background-color: $selectBg;
+// 	-webkit-box-shadow: none;
+// 	box-shadow: none;
+// }
+// ::-moz-selection {
+// 	color: $selectColor;
+// 	background-color: $selectBg;
+// 	box-shadow: none;
+// }
+
+// Стилизация скролла
+
+$scrollbarColor: $accent;
+$scrollbarHover: $accent;
+
+::-webkit-scrollbar {
+	width: rem(8);
+}
+::-webkit-scrollbar-track {
+	background: #fff;
+}
+::-webkit-scrollbar-thumb {
+	background: $scrollbarColor;
+	border-radius: rem(8);
+	@media (any-hover: hover) {
+		&:hover {
+			background: $scrollbarHover;
+		}
+	}
+}
+
+//============ ОБЩИЕ ЭЛЕМЕНТЫ ============
+
+// ========== ВСПОМОГАТЕЛЬНЫЕ КЛАССЫ ======
+.hidden {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	margin: -1px;
+	border: 0;
+	padding: 0;
+	white-space: nowrap;
+	clip-path: inset(100%);
+	clip: rect(0 0 0 0);
+	overflow: hidden;
+}
+
+.cover-image {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+}
+
+// ========== ВСПОМОГАТЕЛЬНЫЕ КЛАССЫ ======

@@ -1,0 +1,252 @@
+@use "sass:color";
+@use "sass:math";
+@use "mixins" as *;
+@use "variables" as *;
+@use "fonts";
+@use "icons";
+
+.about {
+	padding: rem(32) 0;
+	// .about__body
+	&__body {
+		position: relative;
+	}
+	// .about__title
+	&__title {
+	}
+	// .about__text
+	&__text {
+		text-align: center;
+		max-width: 68.75rem;
+		margin-inline: auto;
+		display: flex;
+		flex-direction: column;
+		gap: 2.25rem;
+		font-size: 1.5rem;
+		margin-top: 2rem;
+		@media (min-width: $md4) {
+			font-size: 1.75rem;
+		}
+		@media (min-width: $md2) {
+			margin-top: 4rem;
+			font-size: 2.1875rem;
+		}
+	}
+	// .about__image
+	&__image {
+		max-width: 37.5rem;
+		margin-inline: auto;
+	}
+	// .about__tagline
+	&__tagline {
+		margin-top: 1.5rem;
+		text-align: center;
+		margin-inline: auto;
+		max-width: 42rem;
+		font-size: 1.5rem;
+		@media (min-width: $md4) {
+			font-size: 1.75rem;
+		}
+		@media (min-width: $md2) {
+			font-size: 2.1875rem;
+		}
+		@media (min-width: $md0) {
+			max-width: 52rem;
+		}
+	}
+	// .about__hint
+	&__hint {
+		text-align: center;
+		font-size: 1.25rem;
+		font-weight: 400;
+		margin-top: 1rem;
+		margin-left: auto;
+		margin-right: auto;
+		max-width: 42rem;
+		@media (min-width: $md1) {
+			max-width: 18.75rem;
+			margin-top: 0;
+			margin-left: 0;
+			margin-right: 0;
+			position: absolute;
+			bottom: 0;
+			right: 0;
+		}
+		&::before {
+			content: "*";
+		}
+	}
+}
+
+.classes {
+	padding: rem(60) 0;
+	@media (min-width: $md4) {
+		padding: rem(120) 0;
+	}
+	@media (min-width: $md2) {
+		padding: rem(170) 0;
+	}
+	// .classes__title
+	&__title {
+	}
+	// .classes__body
+	&__body {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		gap: 2rem;
+		flex-direction: column;
+		margin-top: rem(30);
+		@media (min-width: $md2) {
+			margin-top: rem(70);
+			flex-direction: row;
+		}
+		@media (min-width: $md1) {
+			margin-top: rem(140);
+		}
+	}
+	// .classes__text
+	&__text {
+		text-align: center;
+		display: flex;
+		flex-direction: column;
+		font-size: 1.5rem;
+		gap: 0.785rem;
+		@media (min-width: $md4) {
+			gap: 2rem;
+			font-size: 1.75rem;
+		}
+		@media (min-width: $md2) {
+			font-size: 2.1875rem;
+			max-width: 31.5rem;
+		}
+	}
+	// .classes__items
+	&__items {
+		display: flex;
+		max-width: 56.25rem;
+		@media (any-hover: hover) {
+			&:hover {
+				.classes__item {
+					opacity: 0.5;
+					@media (any-hover: hover) {
+						&:hover {
+							opacity: 1;
+						}
+					}
+				}
+			}
+		}
+	}
+	// .classes__item
+	&__item {
+		transition: opacity 0.3s ease;
+	}
+}
+
+.manufacturer {
+	padding: rem(60) 0;
+	@media (min-width: $md4) {
+		padding: rem(120) 0;
+	}
+	@media (min-width: $md1) {
+		padding: rem(180) 0;
+	}
+	// .manufacturer__title
+	&__title {
+	}
+	// .manufacturer__body
+	&__body {
+		display: grid;
+		gap: 2rem;
+		margin-top: 2rem;
+		@media (min-width: $md4) {
+			font-size: 3.5rem;
+		}
+		@media (min-width: $md2) {
+			margin-top: 5rem;
+			grid-template-columns: repeat(2, 1fr);
+		}
+		@media (min-width: $md1) {
+			margin-top: 10.5rem;
+		}
+	}
+	// .manufacturer__image
+	&__image {
+		width: 100%;
+		& img {
+			width: 100%;
+		}
+	}
+	// .manufacturer__text
+	&__text {
+		text-align: center;
+		font-size: 1.5rem;
+		@media (min-width: $md4) {
+			font-size: 1.75rem;
+		}
+		@media (min-width: $md2) {
+			font-size: 1.875rem;
+			padding: 0 1rem 0 5rem;
+		}
+		@media (min-width: $md0) {
+			font-size: 2.1875rem;
+		}
+	}
+}
+
+.testing {
+	padding: rem(60) 0 rem(48);
+	@media (min-width: $md4) {
+		padding: rem(120) 0 rem(48);
+	}
+	@media (min-width: $md1) {
+		padding: rem(180) 0 rem(48);
+	}
+	// .testing__title
+	&__title {
+	}
+	// .testing__text
+	&__text {
+		margin-top: 1.25rem;
+		text-align: center;
+		display: flex;
+		flex-direction: column;
+		gap: 2.25rem;
+		font-size: 1.5rem;
+		@media (min-width: $md4) {
+			font-size: 1.75rem;
+		}
+		@media (min-width: $md0) {
+			font-size: 2.1875rem;
+		}
+	}
+	// .testing__video
+	&__video {
+		margin-top: 1.25rem;
+	}
+	// .testing__footer
+	&__footer {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+	}
+	// .testing__footer-text
+	&__footer-text {
+		text-align: center;
+		font-size: 1.5rem;
+		margin-top: 2.5rem;
+		@media (min-width: $md4) {
+			margin-top: 5rem;
+			font-size: 1.75rem;
+		}
+		@media (min-width: $md0) {
+			margin-top: 11.7rem;
+			font-size: 2.1875rem;
+		}
+	}
+	// .testing__btn
+	&__btn {
+		margin-top: 3.3rem;
+	}
+}

@@ -1,0 +1,57 @@
+@font-face {
+  font-family: 'icons';
+  src:  url('fonts/icons.eot?gc4hi7');
+  src:  url('fonts/icons.eot?gc4hi7#iefix') format('embedded-opentype'),
+    url('fonts/icons.ttf?gc4hi7') format('truetype'),
+    url('fonts/icons.woff?gc4hi7') format('woff'),
+    url('fonts/icons.svg?gc4hi7#icons') format('svg');
+  font-weight: normal;
+  font-style: normal;
+  font-display: block;
+}
+
+[class^="icon-"], [class*=" icon-"] {
+  /* use !important to prevent issues with browser extensions that change fonts */
+  font-family: 'icons' !important;
+  speak: never;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.icon-cart:before {
+  content: "\e900";
+}
+.icon-check:before {
+  content: "\e901";
+}
+.icon-chevron:before {
+  content: "\e902";
+}
+.icon-close:before {
+  content: "\e903";
+}
+.icon-minus:before {
+  content: "\e904";
+}
+.icon-next:before {
+  content: "\e905";
+}
+.icon-plus:before {
+  content: "\e906";
+}
+.icon-prev:before {
+  content: "\e907";
+}
+.icon-telegram:before {
+  content: "\e908";
+}
+.icon-whatsapp:before {
+  content: "\e909";
+}

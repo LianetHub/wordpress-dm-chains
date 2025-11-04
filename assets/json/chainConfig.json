@@ -1,0 +1,395 @@
+{
+    "steps": {
+        "pitch": {
+            "title": "pitch",
+            "options": [
+                {
+                    "value": "0.325",
+                    "label": "0.325”",
+                    "image": "/assets/img/chains/pitch-0.325.png"
+                },
+                {
+                    "value": "0.404",
+                    "label": "0,404”",
+                    "image": "/assets/img/chains/pitch-0.404.png"
+                },
+                {
+                    "value": "1/4",
+                    "label": "1/4”",
+                    "image": "/assets/img/chains/pitch-1-4.png"
+                },
+                {
+                    "value": "3/8",
+                    "label": "3/8”",
+                    "image": "/assets/img/chains/pitch-3-8.png"
+                }
+            ]
+        },
+        "thickness": {
+            "title": "thickness",
+            "options": [
+                {
+                    "value": "1.1",
+                    "label": "1,1 мм",
+                    "image": "/assets/img/chains/thickness-1.1.png",
+                    "availableFor": [
+                        {
+                            "pitch": "0.325"
+                        },
+                        {
+                            "pitch": "1/4"
+                        },
+                        {
+                            "pitch": "3/8"
+                        }
+                    ]
+                },
+                {
+                    "value": "1.3",
+                    "label": "1,3 мм",
+                    "image": "/assets/img/chains/thickness-1.3.png",
+                    "availableFor": [
+                        {
+                            "pitch": "0.325"
+                        },
+                        {
+                            "pitch": "1/4"
+                        },
+                        {
+                            "pitch": "3/8"
+                        }
+                    ]
+                },
+                {
+                    "value": "1.5",
+                    "label": "1,5 мм",
+                    "image": "/assets/img/chains/thickness-1.5.png",
+                    "availableFor": [
+                        {
+                            "pitch": "0.325"
+                        },
+                        {
+                            "pitch": "3/8"
+                        }
+                    ]
+                },
+                {
+                    "value": "1.6",
+                    "label": "1,6 мм",
+                    "image": "/assets/img/chains/thickness-1.6.png",
+                    "availableFor": [
+                        {
+                            "pitch": "0.325"
+                        },
+                        {
+                            "pitch": "0.404"
+                        },
+                        {
+                            "pitch": "3/8"
+                        }
+                    ]
+                },
+                {
+                    "value": "2.0",
+                    "label": "2,0 мм",
+                    "image": "/assets/img/chains/thickness-2.0.png",
+                    "availableFor": [
+                        {
+                            "pitch": "0.404"
+                        }
+                    ]
+                }
+            ]
+        },
+        "class": {
+            "title": "class",
+            "options": [
+                {
+                    "value": "A",
+                    "label": "A",
+                    "image": "/assets/img/chains/class-A.png",
+                    "availableFor": [
+                        {
+                            "pitch": "0.325",
+                            "thickness": [
+                                "1.1",
+                                "1.3",
+                                "1.5",
+                                "1.6"
+                            ]
+                        },
+                        {
+                            "pitch": "0.404",
+                            "thickness": [
+                                "2.0"
+                            ]
+                        },
+                        {
+                            "pitch": "1/4",
+                            "thickness": [
+                                "1.1",
+                                "1.3"
+                            ]
+                        },
+                        {
+                            "pitch": "3/8",
+                            "thickness": [
+                                "1.1",
+                                "1.3",
+                                "1.5"
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "value": "B",
+                    "label": "B",
+                    "image": "/assets/img/chains/class-B.png",
+                    "availableFor": [
+                        {
+                            "pitch": "0.325",
+                            "thickness": [
+                                "1.3",
+                                "1.5",
+                                "1.6"
+                            ]
+                        },
+                        {
+                            "pitch": "0.404",
+                            "thickness": [
+                                "1.6"
+                            ]
+                        },
+                        {
+                            "pitch": "1/4",
+                            "thickness": [
+                                "1.1",
+                                "1.3"
+                            ]
+                        },
+                        {
+                            "pitch": "3/8",
+                            "thickness": [
+                                "1.1",
+                                "1.3",
+                                "1.6"
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "value": "C",
+                    "label": "C",
+                    "image": "/assets/img/chains/class-C.png",
+                    "availableFor": [
+                        {
+                            "pitch": "0.325",
+                            "thickness": [
+                                "1.5"
+                            ]
+                        },
+                        {
+                            "pitch": "1/4",
+                            "thickness": [
+                                "1.1"
+                            ]
+                        },
+                        {
+                            "pitch": "3/8",
+                            "thickness": [
+                                "1.3",
+                                "1.6"
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    },
+    "combinations": [
+        {
+            "pitch": "1/4",
+            "thickness": "1.1",
+            "class": "A",
+            "variation_id": 128,
+            "price_html": "",
+            "image": ""
+        },
+        {
+            "pitch": "1/4",
+            "thickness": "1.1",
+            "class": "B",
+            "variation_id": 129,
+            "price_html": "",
+            "image": ""
+        },
+        {
+            "pitch": "1/4",
+            "thickness": "1.1",
+            "class": "C",
+            "variation_id": 130,
+            "price_html": "",
+            "image": ""
+        },
+        {
+            "pitch": "1/4",
+            "thickness": "1.3",
+            "class": "A",
+            "variation_id": 131,
+            "price_html": "",
+            "image": ""
+        },
+        {
+            "pitch": "1/4",
+            "thickness": "1.3",
+            "class": "B",
+            "variation_id": 132,
+            "price_html": "",
+            "image": ""
+        },
+        {
+            "pitch": "0.325",
+            "thickness": "1.1",
+            "class": "A",
+            "variation_id": 143,
+            "price_html": "",
+            "image": ""
+        },
+        {
+            "pitch": "0.325",
+            "thickness": "1.3",
+            "class": "A",
+            "variation_id": 146,
+            "price_html": "",
+            "image": ""
+        },
+        {
+            "pitch": "0.325",
+            "thickness": "1.3",
+            "class": "B",
+            "variation_id": 149,
+            "price_html": "",
+            "image": ""
+        },
+        {
+            "pitch": "0.325",
+            "thickness": "1.5",
+            "class": "A",
+            "variation_id": 147,
+            "price_html": "",
+            "image": ""
+        },
+        {
+            "pitch": "0.325",
+            "thickness": "1.5",
+            "class": "B",
+            "variation_id": 150,
+            "price_html": "",
+            "image": ""
+        },
+        {
+            "pitch": "0.325",
+            "thickness": "1.5",
+            "class": "C",
+            "variation_id": 151,
+            "price_html": "",
+            "image": ""
+        },
+        {
+            "pitch": "0.325",
+            "thickness": "1.6",
+            "class": "A",
+            "variation_id": 152,
+            "price_html": "",
+            "image": ""
+        },
+        {
+            "pitch": "0.325",
+            "thickness": "1.6",
+            "class": "B",
+            "variation_id": 153,
+            "price_html": "",
+            "image": ""
+        },
+        {
+            "pitch": "3/8",
+            "thickness": "1.1",
+            "class": "A",
+            "variation_id": 158,
+            "price_html": "",
+            "image": ""
+        },
+        {
+            "pitch": "3/8",
+            "thickness": "1.1",
+            "class": "B",
+            "variation_id": 159,
+            "price_html": "",
+            "image": ""
+        },
+        {
+            "pitch": "3/8",
+            "thickness": "1.3",
+            "class": "A",
+            "variation_id": 161,
+            "price_html": "",
+            "image": ""
+        },
+        {
+            "pitch": "3/8",
+            "thickness": "1.3",
+            "class": "B",
+            "variation_id": 162,
+            "price_html": "",
+            "image": ""
+        },
+        {
+            "pitch": "3/8",
+            "thickness": "1.3",
+            "class": "C",
+            "variation_id": 163,
+            "price_html": "",
+            "image": ""
+        },
+        {
+            "pitch": "3/8",
+            "thickness": "1.5",
+            "class": "A",
+            "variation_id": 164,
+            "price_html": "",
+            "image": ""
+        },
+        {
+            "pitch": "3/8",
+            "thickness": "1.6",
+            "class": "B",
+            "variation_id": 167,
+            "price_html": "",
+            "image": ""
+        },
+        {
+            "pitch": "3/8",
+            "thickness": "1.6",
+            "class": "C",
+            "variation_id": 168,
+            "price_html": "",
+            "image": ""
+        },
+        {
+            "pitch": "0.404",
+            "thickness": "1.6",
+            "class": "B",
+            "variation_id": 177,
+            "price_html": "",
+            "image": ""
+        },
+        {
+            "pitch": "0.404",
+            "thickness": "2.0",
+            "class": "A",
+            "variation_id": 178,
+            "price_html": "",
+            "image": ""
+        }
+    ]
+}

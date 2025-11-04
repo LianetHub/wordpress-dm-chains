@@ -1,0 +1,386 @@
+@use "sass:color";
+@use "sass:math";
+@use "mixins" as *;
+@use "variables" as *;
+@use "fonts";
+@use "icons";
+@use "ui";
+
+.form {
+	// .form__title
+	&__title {
+		line-height: 1;
+		margin-bottom: 0.25rem;
+	}
+	// .form__control
+	&__control {
+		text-overflow: ellipsis;
+		transition: border-color 0.3s ease 0s, color 0.3s ease 0s;
+		width: 100%;
+		background: #f4f8f4;
+		font-weight: 700;
+		font-size: 1.25rem;
+		border: rem(2) dashed #e65c10;
+		padding: 1rem 1.5rem;
+		border-radius: 1rem;
+		@media (min-width: $md4) {
+			border-radius: 1.875rem;
+			padding: 1.44rem 2.5rem;
+			border: rem(4) dashed #e65c10;
+			font-size: 2.8125rem;
+		}
+		&::placeholder {
+			opacity: 1;
+			color: #717171;
+		}
+		&:hover,
+		&:focus {
+			border-color: $accent;
+		}
+		&:disabled {
+			background: #ddd;
+			border-color: #ddd;
+		}
+		&._error {
+			outline: 1px solid #ba2028;
+			background: #fff1ed;
+		}
+	}
+	// .form__group
+	&__group {
+	}
+	// .form__group-caption
+	&__group-caption {
+		color: #000;
+		font-size: 2rem;
+		margin-bottom: rem(25);
+		@media (min-width: $md4) {
+			margin-bottom: rem(56);
+			font-size: 2.8125rem;
+		}
+	}
+	.wpcf7-form-control-wrap {
+		@extend .form__group-items;
+	}
+
+	// .form__group-items
+	&__group-items {
+		display: flex;
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 1.5rem;
+		@media (min-width: $md4) {
+			gap: 2.94rem;
+		}
+	}
+	.wpcf7-radio,
+	.wpcf7-acceptance {
+		& label {
+			& input {
+				@extend .hidden;
+				&:checked {
+					& ~ .wpcf7-list-item-label {
+						&::after {
+							background: #e65c10;
+							border-color: #e65c10;
+						}
+						&::before {
+							opacity: 1;
+						}
+					}
+				}
+			}
+			.wpcf7-list-item-label {
+				@extend .form__radio-btn-field;
+			}
+		}
+	}
+	// .form__radio-btn
+	&__radio-btn {
+		&:has(input:checked) {
+			& .form__radio-btn-field {
+				&::after {
+					background: #e65c10;
+					border-color: #e65c10;
+				}
+				&::before {
+					opacity: 1;
+				}
+			}
+		}
+		.wpcf7-list-item {
+			@extend .hidden;
+		}
+	}
+	// .form__radio-btn-input
+	&__radio-btn-input {
+		&:checked {
+			& ~ .form__radio-btn-field {
+				&::after {
+					background: #e65c10;
+					border-color: #e65c10;
+				}
+				&::before {
+					opacity: 1;
+				}
+			}
+		}
+	}
+	// .form__radio-btn-field
+	&__radio-btn-field {
+		align-items: center;
+		display: block;
+		position: relative;
+		z-index: 1;
+		cursor: pointer;
+		font-size: 1.5rem;
+		user-select: none;
+		& a {
+			color: $accent;
+			text-decoration: underline;
+			@media (any-hover: hover) {
+				&:hover {
+					text-decoration: none;
+				}
+			}
+		}
+		padding-left: 4.5rem;
+		@media (min-width: $md4) {
+			padding-left: 8rem;
+			font-size: 2.1875rem;
+		}
+		&.sm-text {
+			font-size: 1rem;
+			@media (min-width: $md4) {
+				font-size: 1.5625rem;
+			}
+		}
+		&::before {
+			position: absolute;
+			top: 50%;
+			left: 0;
+			color: #fff;
+			display: flex;
+			justify-content: center;
+			align-items: center;
+			z-index: 2;
+			transform: translateY(-50%);
+			opacity: 0;
+			@extend %ic, .icon-check;
+			height: em(40, 70);
+			width: em(116, 70);
+			font-size: rem(40);
+			@media (min-width: $md4) {
+				font-size: rem(70);
+			}
+		}
+		&::after {
+			position: absolute;
+			z-index: 1;
+			top: 50%;
+			left: 0;
+			content: "";
+
+			border: rem(3) solid #000;
+			color: #fff;
+			transition: background-color 0.3s ease;
+			transform: skew(-45deg) translateY(-50%);
+			height: rem(25);
+			width: rem(40);
+			@media (min-width: $md4) {
+				height: rem(40);
+				width: rem(72);
+			}
+		}
+		@media (any-hover: hover) {
+			&:hover {
+				&::after {
+					background: #9c9d9c;
+				}
+			}
+		}
+	}
+	&__controls {
+		width: 100%;
+		display: flex;
+		flex-direction: column;
+		gap: rem(15);
+
+		margin-top: 1.5rem;
+		@media (min-width: $md4) {
+			margin-top: 2.94rem;
+			gap: rem(35);
+		}
+	}
+
+	&__submit {
+		margin-top: 3.88rem;
+		margin-inline: auto;
+		cursor: pointer;
+		&:has(input:disabled) {
+			pointer-events: none;
+			cursor: default;
+			color: $white;
+			&::before {
+				background: $grey;
+			}
+		}
+		& input {
+			background: transparent;
+			color: inherit;
+			cursor: pointer;
+		}
+		.wpcf7-spinner {
+			display: none;
+		}
+	}
+
+	// .form__total
+	&__total {
+		color: #000;
+		text-align: center;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+	}
+	// .form__total-caption
+	&__total-caption {
+		font-size: 3.125rem;
+	}
+	// .form__total-value
+	&__total-value {
+		font-size: 3.75rem;
+	}
+}
+
+.btn {
+	position: relative;
+	z-index: 1;
+	display: inline-flex;
+	justify-content: center;
+	align-items: center;
+	text-align: center;
+	user-select: none;
+	transition: all 0.3s ease 0s;
+	padding: em(8, 35) em(50, 35);
+	width: fit-content;
+	font-weight: 700;
+	position: relative;
+	z-index: 1;
+	display: block;
+	transition: color 0.3s ease;
+	clip-path: polygon(em(50, 30) 0, 100% 0, calc(100% - em(50, 30)) 100%, 0 100%);
+	-webkit-clip-path: polygon(em(50, 30) 0, 100% 0, calc(100% - em(50, 30)) 100%, 0 100%);
+	font-size: rem(25);
+	min-width: em(300, 35);
+	@media (min-width: $md3) {
+		font-size: rem(35);
+	}
+	&::before {
+		content: "";
+		position: absolute;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 100%;
+		z-index: -1;
+
+		transition: background-color 0.3s ease;
+		clip-path: polygon(em(50, 30) 0, 100% 0, calc(100% - em(50, 30)) 100%, 0 100%);
+		-webkit-clip-path: polygon(em(50, 30) 0, 100% 0, calc(100% - em(50, 30)) 100%, 0 100%);
+	}
+	&.btn-primary {
+		color: $white;
+		&::before {
+			background: $accent;
+		}
+		&:hover {
+			&::before {
+				background: $grey;
+			}
+		}
+		&:active {
+			color: $dark;
+			&::before {
+				background: $white;
+			}
+		}
+	}
+	&.btn-lg {
+		padding: em(25, 70);
+		font-size: rem(35);
+		width: em(320, 35);
+		@media (min-width: $md5) {
+			width: em(860, 70);
+		}
+		@media (min-width: $md4) {
+			font-size: rem(40);
+		}
+		@media (min-width: $md3) {
+			font-size: rem(50);
+		}
+		@media (min-width: $md2) {
+			font-size: rem(60);
+		}
+		@media (min-width: $md1) {
+			font-size: rem(70);
+		}
+	}
+	&:disabled,
+	&[aria-disabled="true"] {
+		cursor: default;
+		color: $white;
+		&::before {
+			background: $grey;
+		}
+		pointer-events: none;
+	}
+}
+
+.radio-btn {
+	// .radio-btn__input
+	&__input {
+	}
+	// .radio-btn__btn
+	&__btn {
+		padding: 0 em(40, 45);
+		width: 100%;
+		height: em(58, 45);
+		display: inline-block;
+		text-align: center;
+		cursor: pointer;
+		position: relative;
+		z-index: 1;
+		filter: drop-shadow(0 em(4, 45) em(8, 45) rgba(0, 0, 0, 0.15));
+		font-size: rem(25);
+		@media (min-width: $md4) {
+			font-size: rem(30);
+		}
+		@media (min-width: $md3) {
+			font-size: rem(35);
+		}
+		@media (min-width: $md1) {
+			font-size: rem(45);
+		}
+		&::before {
+			content: "";
+			position: absolute;
+			top: 0;
+			left: 0;
+			width: 100%;
+			height: 100%;
+			transition: background-color 0.3s ease;
+			background: #cdcdcd;
+			z-index: -1;
+			clip-path: polygon(em(40, 30) 0, 100% 0, calc(100% - em(40, 30)) 100%, 0 100%);
+			-webkit-clip-path: polygon(em(40, 30) 0, 100% 0, calc(100% - em(40, 30)) 100%, 0 100%);
+		}
+		@media (any-hover: hover) {
+			&:hover {
+				&::before {
+					background: #9c9d9c;
+				}
+			}
+		}
+	}
+}

@@ -1,0 +1,85 @@
+@use "sass:color";
+@use "sass:math";
+@use "mixins" as *;
+@use "variables" as *;
+@use "fonts";
+@use "icons";
+
+.footer {
+	background: $dark;
+	color: $white;
+	padding: rem(16) 0;
+	.page-template-front-page & {
+		flex: 1 1 auto;
+	}
+	@media (min-width: $md4) {
+		padding: rem(32) 0;
+	}
+	// .footer__main
+	&__main {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+	}
+	// .footer__email
+	&__email {
+		transition: color 0.3s ease;
+		font-size: 1.5rem;
+		@media (min-width: $md5) {
+			font-size: 2rem;
+		}
+		@media (min-width: $md4) {
+			font-size: 2.5rem;
+		}
+		@media (min-width: $md3) {
+			font-size: 3rem;
+		}
+		@media (min-width: $md1) {
+			font-size: 3.75rem;
+		}
+		@media (any-hover: hover) {
+			&:hover {
+				color: $accent;
+			}
+		}
+	}
+	// .footer__socials
+	&__socials {
+		margin-left: auto;
+		@media (min-width: $md2) {
+			margin-left: rem(270);
+		}
+	}
+}
+
+.socials {
+	display: flex;
+	align-items: center;
+	gap: 1rem;
+	@media (min-width: $md4) {
+		gap: 1.5rem;
+	}
+	@media (min-width: $md2) {
+		gap: 2.5rem;
+	}
+	// .socials__link
+	&__link {
+		color: $accent;
+		transition: color 0.3s ease;
+		font-size: rem(32);
+		@media (min-width: $md4) {
+			font-size: rem(50);
+		}
+		@media (min-width: $md3) {
+			font-size: rem(60);
+		}
+		@media (min-width: $md1) {
+			font-size: rem(72);
+		}
+		@media (any-hover: hover) {
+			&:hover {
+				color: $grey;
+			}
+		}
+	}
+}

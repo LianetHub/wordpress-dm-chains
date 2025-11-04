@@ -1,0 +1,34 @@
+// Шрифт по умолчанию
+$fontfamily: "Bahnschrift" !default;
+
+// Шрифт по умолчанию
+
+$md0: 1639.98px !default;
+$md1: 1439.98px !default;
+$md2: 1199.98px !default;
+$md3: 991.98px !default;
+$md4: 767.98px !default;
+$md5: 575.98px !default;
+$md6: 389.98px !default;
+
+// ПЕРЕМЕННЫЕ
+$minWidth: 320; // Минимальная ширина страницы
+$maxWidth: 1920; // Ширина макета
+$maxWidthContainer: rem(1720, 16); // Максимальная ширина ограничивающего контейнера
+$containerPadding: 30;
+
+$white: #fff;
+$dark: #111214;
+$accent: #e65c10;
+$grey: #9c9d9c;
+$red: #fa0644;
+
+// Z-Index
+$ui-index-1: 1; // Для наполняющих элементов в общем потоке
+$ui-index-2: 2; // Для наполняющих элементов в общем потоке
+$ui-index-3: 3; // Для масок
+$ui-index-4: 4; // Для сайдбаров
+$ui-index-5: 5; // Для модалок
+$ui-index-6: 6; // Для элементов, перекрывающих все
+
+$header: var(--header-height, #{rem(124, 16)});
