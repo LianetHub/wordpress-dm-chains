@@ -286,6 +286,18 @@
                     updateResultsDisplay();
                 }
 
+                function updateStepCompletion() {
+                    $quizItems.each(function(index) {
+                        const stepKey = stepKeys[index];
+                        const value = chainConfigurator.state[stepKey];
+                        if (value) {
+                            $(this).addClass('completed');
+                        } else {
+                            $(this).removeClass('completed');
+                        }
+                    });
+                }
+
                 // -------------------
                 // События
                 // -------------------

@@ -522,7 +522,7 @@ function handle_get_product_data()
 	wp_die();
 }
 
-// ✅ Получение актуальной суммы корзины
+
 function get_cart_total_custom_ajax()
 {
 	if (! class_exists('WooCommerce')) {
@@ -544,7 +544,7 @@ add_action('wp_ajax_get_cart_total_custom', 'get_cart_total_custom_ajax');
 add_action('wp_ajax_nopriv_get_cart_total_custom', 'get_cart_total_custom_ajax');
 
 
-// ✅ Удаление товара из корзины (без GET-запросов)
+
 function remove_from_cart_ajax()
 {
 	if (! class_exists('WooCommerce') || empty($_POST['cart_item_key'])) {
@@ -571,7 +571,7 @@ add_action('wp_ajax_remove_from_cart', 'remove_from_cart_ajax');
 add_action('wp_ajax_nopriv_remove_from_cart', 'remove_from_cart_ajax');
 
 
-// ✅ Обновление количества товара
+
 function update_cart_item_quantity_ajax()
 {
 	if (! class_exists('WooCommerce') || empty($_POST['hash']) || ! isset($_POST['quantity'])) {
@@ -584,7 +584,7 @@ function update_cart_item_quantity_ajax()
 	$new_quantity  = intval($_POST['quantity']);
 
 	$cart = WC()->cart;
-	$updated = $cart->set_quantity($cart_item_key, $new_quantity, true); // true = пересчитать totals
+	$updated = $cart->set_quantity($cart_item_key, $new_quantity, true);
 
 	if ($updated) {
 		$cart->calculate_totals();
@@ -594,7 +594,8 @@ function update_cart_item_quantity_ajax()
 		wp_send_json_success([
 			'new_price'    => wc_price($_product->get_price()),
 			'new_subtotal' => wc_price($cart_item['line_total']),
-			'total'        => $cart->get_cart_total()
+			'total'        => $cart->get_cart_total(),
+			'raw_total'    => $cart->get_total()
 		]);
 	} else {
 		wp_send_json_error(['message' => 'Не удалось обновить количество.']);
