@@ -4,6 +4,7 @@
 // 1. CONSTANTS
 // =========================================================================
 
+// Define the absolute path to the theme's templates directory
 define('TEMPLATE_PATH', dirname(__FILE__) . '/templates/');
 
 
@@ -11,7 +12,6 @@ define('TEMPLATE_PATH', dirname(__FILE__) . '/templates/');
 // 2. ENQUEUE STYLES AND SCRIPTS
 // =========================================================================
 
-// Enqueue theme styles (CSS)
 function theme_enqueue_styles()
 {
 	wp_enqueue_style('swiper', get_template_directory_uri() . '/assets/css/libs/swiper-bundle.min.css');
@@ -23,7 +23,6 @@ function theme_enqueue_styles()
 add_action('wp_enqueue_scripts', 'theme_enqueue_styles');
 
 
-// Enqueue theme scripts (JS)
 function theme_enqueue_scripts()
 {
 	wp_deregister_script('jquery');
@@ -33,6 +32,7 @@ function theme_enqueue_scripts()
 	wp_enqueue_script('intlTelInput-js', get_template_directory_uri() . '/assets/js/libs/intlTelInput.min.js', array('jquery'), null, true);
 
 	wp_enqueue_script('cdek-widget', 'https://cdn.jsdelivr.net/npm/@cdek-it/widget@3', array(), null, true);
+	wp_enqueue_script('yandex-widget', 'https://ndd-widget.landpro.site/widget.js', array(), null, true);
 
 	wp_enqueue_script('app-js', get_template_directory_uri() . '/assets/js/app.min.js', array('jquery'), null, true);
 
@@ -43,12 +43,22 @@ function theme_enqueue_scripts()
 }
 add_action('wp_enqueue_scripts', 'theme_enqueue_scripts');
 
+function add_async_attribute($tag, $handle, $src)
+{
+	$async_handles = array('cdek-widget', 'yandex-widget');
+
+	if (in_array($handle, $async_handles)) {
+		return str_replace(' src', ' async src', $tag);
+	}
+	return $tag;
+}
+add_filter('script_loader_tag', 'add_async_attribute', 10, 3);
+
 
 // =========================================================================
 // 3. THEME SUPPORT AND UTILITIES
 // =========================================================================
 
-// Allow SVG file uploads
 function allow_svg_uploads($mimes)
 {
 	$mimes['svg'] = 'image/svg+xml';
@@ -57,7 +67,7 @@ function allow_svg_uploads($mimes)
 add_filter('upload_mimes', 'allow_svg_uploads');
 
 
-// Register navigation menus
+
 function register_custom_menus()
 {
 	register_nav_menus(array(
@@ -129,8 +139,8 @@ function rus_to_lat($string)
 	return $transliterated;
 }
 
-// Enable Custom Logo feature
-function  custom_logo_setup()
+
+function custom_logo_setup()
 {
 	add_theme_support('custom-logo', array(
 		'height'      => 110,
@@ -143,7 +153,6 @@ function  custom_logo_setup()
 add_action('after_setup_theme', 'custom_logo_setup');
 
 
-// ACF Page Settins
 if (function_exists('acf_add_options_page')) {
 	acf_add_options_page(array(
 		'page_title'    => 'Общие поля для всего сайта',
@@ -155,8 +164,6 @@ if (function_exists('acf_add_options_page')) {
 }
 
 
-
-// Declare WooCommerce theme support
 function woocommerce_support()
 {
 	add_theme_support('woocommerce');
@@ -175,7 +182,9 @@ add_filter('woocommerce_register_post_type_shop_order_refund', function ($args) 
 	return array_merge($args, ['public' => false, 'show_ui' => false]);
 });
 
+
 add_filter('woocommerce_payment_gateways', '__return_empty_array');
+
 
 
 add_filter('woocommerce_get_settings_pages', function ($settings) {
@@ -189,11 +198,13 @@ add_filter('woocommerce_get_settings_pages', function ($settings) {
 	return $settings;
 });
 
+
 add_action('wp_enqueue_scripts', function () {
 	wp_dequeue_script('wc-checkout');
 	wp_dequeue_script('wc-credit-card-form');
 	wp_dequeue_script('wc-payment-method');
 }, 100);
+
 
 
 add_action('template_redirect', function () {
@@ -203,6 +214,7 @@ add_action('template_redirect', function () {
 	}
 });
 
+
 add_action('init', function () {
 	remove_rewrite_tag('%product_cat%');
 	remove_rewrite_tag('%product_tag%');
@@ -210,6 +222,7 @@ add_action('init', function () {
 	remove_rewrite_tag('%shop%');
 	remove_rewrite_tag('%myaccount%');
 });
+
 
 add_action('wp_enqueue_scripts', function () {
 	if (!is_cart()) {
@@ -222,11 +235,11 @@ add_action('wp_enqueue_scripts', function () {
 	}
 }, 99);
 
+
 add_action('admin_menu', function () {
 	remove_menu_page('edit.php?post_type=shop_order');
 	remove_menu_page('edit.php?post_type=shop_coupon');
 });
-
 
 
 wp_localize_script('your-script-handle', 'configurator_vars', array(
@@ -286,6 +299,7 @@ function get_chain_combinations_data($product_id)
 
 	return $combinations;
 }
+
 
 function build_chain_config(array $rows): array
 {
@@ -484,8 +498,12 @@ function build_chain_config(array $rows): array
 	];
 }
 
-add_action('wp_ajax_get_product_data', 'handle_get_product_data');
+// =========================================================================
+// 4. AJAX HANDLERS
+// =========================================================================
 
+
+add_action('wp_ajax_get_product_data', 'handle_get_product_data');
 add_action('wp_ajax_nopriv_get_product_data', 'handle_get_product_data');
 
 function handle_get_product_data()
@@ -495,7 +513,6 @@ function handle_get_product_data()
 	}
 
 	$product_id = intval($_POST['product_id']);
-	$quantity = intval($_POST['quantity']);
 
 	if (!function_exists('wc_get_product')) {
 		wp_send_json_error('WooCommerce не активен.');
@@ -511,8 +528,8 @@ function handle_get_product_data()
 	$price_per_item = wc_get_price_to_display($product);
 
 	$response = array(
-		'price_html'     => $price_html,
-		'product_id'     => $product_id,
+		'price_html'       => $price_html,
+		'product_id'       => $product_id,
 		'price_per_item' => $price_per_item
 	);
 
@@ -521,6 +538,7 @@ function handle_get_product_data()
 
 	wp_die();
 }
+
 
 
 function get_cart_total_custom_ajax()
@@ -606,7 +624,26 @@ add_action('wp_ajax_nopriv_woocommerce_update_cart_item_quantity', 'update_cart_
 
 
 
-// СF7 Settings
+function custom_clear_woocommerce_cart()
+{
+
+	if (defined('DOING_AJAX') && DOING_AJAX) {
+		WC()->cart->empty_cart();
+		wp_send_json_success();
+	}
+
+	wp_die();
+}
+
+
+add_action('wp_ajax_clear_cart_after_order', 'custom_clear_woocommerce_cart');
+add_action('wp_ajax_nopriv_clear_cart_after_order', 'custom_clear_woocommerce_cart');
+
+
+// =========================================================================
+// 5. CONTACT FORM 7 INTEGRATION
+// =========================================================================
+
 
 add_filter('wpcf7_autop_or_not', '__return_false');
 

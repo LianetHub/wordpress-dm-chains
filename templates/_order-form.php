@@ -46,13 +46,17 @@ if (WC()->cart) {
 <div id="order" class="popup">
     <div class="popup__form form">
         <?php echo do_shortcode('[contact-form-7 id="1f99d13" title="Форма заказа"]') ?>
+
+        <div id="yandex-widget-container" class="hidden">
+            <div id="delivery-widget"></div>
+        </div>
+
         <script>
             $(function() {
                 const $orderContainer = $('#order');
                 const $deliveryRadios = $orderContainer.find('input[name="delivery_type"]');
                 const $paymentRadios = $orderContainer.find('input[name="payment_type"]');
                 const $contactRadios = $orderContainer.find('input[name="contact_method"]');
-
 
                 const $businessControls = $orderContainer.find('[data-type="business"]');
                 const $individualControls = $orderContainer.find('[data-type="individual"]');
@@ -67,6 +71,10 @@ if (WC()->cart) {
                 const $totalPriceInput = $('#total_price_input');
                 const $orderDatetimeInput = $('#order_datetime_input');
 
+                const $yandexAddressInput = $('#yandex_address_input');
+                const $yandexPriceInput = $('#yandex_price_input');
+
+
                 const $formTotal = $orderContainer.find('.form__total');
                 const $formTotalValue = $orderContainer.find('.form__total-value');
                 const $policyLabel = $orderContainer.find('input[name="confirm_policies"]').closest('.form__radio-btn');
@@ -75,6 +83,9 @@ if (WC()->cart) {
 
                 const $cdekWidgetContainer = $('#cdek-widget-container');
                 const $yandexWidgetContainer = $('#yandex-widget-container');
+
+                const $successPopup = $('#success-popup');
+                const $formElement = $orderContainer.find('form');
 
                 let cdekWidgetInstance = null;
                 let yandexWidgetInitialized = false;
@@ -99,13 +110,15 @@ if (WC()->cart) {
                 }
 
                 function calculateTotal() {
-                    const productPrice = parseInt($priceProductInput.val()) || 0;
-                    const deliveryPrice = parseInt($priceDeliveryInput.val()) || 0;
+                    const productPrice = parseFloat($priceProductInput.val()) || 0;
+                    const deliveryPrice = parseFloat($priceDeliveryInput.val()) || 0;
                     const total = productPrice + deliveryPrice;
 
-
-                    $totalPriceInput.val(total);
-                    $formTotalValue.text(total.toLocaleString('ru-RU') + ' ₽');
+                    $totalPriceInput.val(total.toFixed(2));
+                    $formTotalValue.text(total.toLocaleString('ru-RU', {
+                        minimumFractionDigits: 0,
+                        maximumFractionDigits: 2
+                    }) + ' ₽');
                 }
 
                 function updateOrderData() {
@@ -124,11 +137,10 @@ if (WC()->cart) {
 
                     $productListInput.val(productNames);
                     $orderDatetimeInput.val(dateTimeString);
-                    $priceProductInput.val(currentProductPrice);
+                    $priceProductInput.val(currentProductPrice.toFixed(2));
 
                     calculateTotal();
                 }
-
 
                 function initCdekWidget(isPickup) {
                     if (cdekWidgetInstance) {
@@ -168,10 +180,55 @@ if (WC()->cart) {
                 }
 
                 function initYandexWidget() {
-                    if (yandexWidgetInitialized) return;
+                    if (yandexWidgetInitialized) {
+                        return;
+                    }
+
+                    if (typeof window.YaDelivery === 'undefined') {
+                        document.addEventListener('YaNddWidgetLoad', createYandexWidget);
+                    } else {
+                        createYandexWidget();
+                    }
                     yandexWidgetInitialized = true;
-                    // Здесь инициализация виджета Яндекс
                 }
+
+                function createYandexWidget() {
+                    window.YaDelivery.createWidget({
+                        containerId: 'yandex-delivery-widget',
+                        params: {
+                            city: "Москва",
+                            size: {
+                                "height": "450px",
+                                "width": "100%"
+                            },
+                            source_platform_station: "GUID_ВАШЕЙ_СТАНЦИИ",
+                            physical_dims_weight_gross: 10000,
+                            delivery_price: "от 100",
+                            delivery_term: "от 1 дня",
+                            show_select_button: true,
+                            filter: {
+                                type: ["pickup_point", "terminal"],
+                                is_yandex_branded: false,
+                                payment_methods: ["already_paid", "card_on_receipt"],
+                                payment_methods_filter: "or"
+                            }
+                        },
+                    });
+                }
+
+                document.addEventListener('YaNddWidgetPointSelected', function(data) {
+                    if (data.detail && data.detail.address && data.detail.price_estimate_max) {
+                        const fullAddress = data.detail.address.full_address;
+                        const deliveryPrice = parseFloat(data.detail.price_estimate_max) || 0;
+
+                        $priceDeliveryInput.val(deliveryPrice.toFixed(2));
+                        $yandexAddressInput.val(fullAddress);
+                        $yandexPriceInput.val(deliveryPrice.toFixed(2));
+
+                        calculateTotal();
+                    }
+                });
+
 
                 function handleDeliveryChange() {
                     const selectedDelivery = $orderContainer.find('input[name="delivery_type"]:checked').val();
@@ -199,7 +256,6 @@ if (WC()->cart) {
                             initYandexWidget();
                             break;
                         case 'pickup_spb':
-                            // Самовывоз: доставка = 0
                             break;
                     }
 
@@ -280,6 +336,57 @@ if (WC()->cart) {
                     $submitButton.prop('disabled', !$policyCheckbox.prop('checked'));
                 }
 
+                function handleMailSent(event) {
+                    $.ajax({
+                        type: 'POST',
+                        url: '<?php echo admin_url('admin-ajax.php'); ?>',
+                        data: {
+                            action: 'clear_cart_after_order'
+                        },
+                        success: function(response) {
+                            if (response.success) {
+                                $(document.body).trigger('wc_fragment_refresh');
+                            }
+                        },
+                        error: function(xhr, status, error) {
+                            console.error('Ошибка при очистке корзины:', error);
+                        }
+                    });
+
+                    if (typeof Fancybox !== 'undefined') {
+                        Fancybox.close();
+
+                        Fancybox.show([{
+                            src: '#success-popup',
+                            type: 'inline'
+                        }]);
+                    } else {
+                        $orderContainer.hide();
+                        $successPopup.show();
+                    }
+
+                    $formElement[0].reset();
+                    $formElement.find('.wpcf7-response-output').removeClass('wpcf7-mail-sent-ok').empty();
+
+                    $deliveryRadios.prop('checked', false);
+                    $paymentRadios.prop('checked', false);
+                    $contactRadios.prop('checked', false);
+                    handleDeliveryChange();
+                    handlePaymentChange();
+                    handleContactChange();
+
+                    updateOrderData();
+                }
+
+                function handleSuccessPopupClose(e) {
+                    e.preventDefault();
+                    if (typeof Fancybox !== 'undefined') {
+                        Fancybox.close();
+                    } else {
+                        $successPopup.hide();
+                    }
+                }
+
 
                 updateOrderData();
 
@@ -290,6 +397,8 @@ if (WC()->cart) {
 
                 $priceDeliveryInput.on('change', calculateTotal);
 
+                $formElement.on('wpcf7mailsent', handleMailSent);
+
 
                 handleDeliveryChange();
                 handlePaymentChange();
@@ -297,5 +406,13 @@ if (WC()->cart) {
                 handlePolicyChange();
             });
         </script>
+    </div>
+</div>
+
+<div id="success-popup" class="popup">
+    <div class="popup__content">
+        <h3 class="popup__title title">Спасибо за ваш заказ!</h3>
+        <p>Ваша заявка успешно отправлена. Мы свяжемся с вами в ближайшее время для подтверждения деталей.</p>
+        <button class="btn btn-primary" data-fancybox-close>Закрыть</button>
     </div>
 </div>

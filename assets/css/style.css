@@ -1,9 +1,10 @@
 @font-face {
   font-family: "Bahnschrift";
-  font-display: swap;
-  src: url("../fonts/Bahnschrift.woff") format("woff"), url("../fonts/Bahnschrift.woff2") format("woff2");
-  font-weight: 400;
+  src: url("../fonts/Bahnschrift.woff2") format("woff2 supports variations"), url("../fonts/Bahnschrift.woff2") format("woff2-variations"), url("../fonts/Bahnschrift.woff") format("woff");
+  font-weight: 100 900;
+  font-stretch: 75% 125%;
   font-style: normal;
+  font-display: swap;
 }
 
 @font-face {
@@ -831,12 +832,85 @@
   width: 100%;
 }
 
-.wpcf7-response-output {
+.wpcf7-form:has(.wpcf7-submit[disabled]) .form__submit {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.wpcf7-form.submitting .form__submit {
+  pointer-events: none;
+}
+
+.wpcf7-form.submitting .wpcf7-submit {
+  color: transparent;
+}
+
+.wpcf7-form.submitting .wpcf7-spinner {
+  opacity: 1;
+  visibility: visible;
+  display: block;
+  background: transparent;
+  opacity: 1;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  margin: 0;
+  -webkit-transform: translate(-50%, -50%);
+      -ms-transform: translate(-50%, -50%);
+          transform: translate(-50%, -50%);
+}
+
+.wpcf7-form.submitting .wpcf7-spinner::before {
   display: none;
 }
 
-.wpcf7-not-valid-tip {
-  font-size: 2.1rem;
+.wpcf7-form.submitting .wpcf7-spinner::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  -webkit-transform: translate(-50%, -50%);
+      -ms-transform: translate(-50%, -50%);
+          transform: translate(-50%, -50%);
+  width: 20px;
+  height: 20px;
+  border: 3px solid currentColor;
+  border-bottom-color: transparent;
+  border-radius: 50%;
+  -webkit-transform-origin: center;
+      -ms-transform-origin: center;
+          transform-origin: center;
+  -webkit-animation: rotation 1s linear infinite;
+          animation: rotation 1s linear infinite;
+  z-index: 3;
+}
+
+@-webkit-keyframes rotation {
+  0% {
+    -webkit-transform: translate(-50%, -50%) rotate(0deg);
+            transform: translate(-50%, -50%) rotate(0deg);
+  }
+
+  100% {
+    -webkit-transform: translate(-50%, -50%) rotate(360deg);
+            transform: translate(-50%, -50%) rotate(360deg);
+  }
+}
+
+@keyframes rotation {
+  0% {
+    -webkit-transform: translate(-50%, -50%) rotate(0deg);
+            transform: translate(-50%, -50%) rotate(0deg);
+  }
+
+  100% {
+    -webkit-transform: translate(-50%, -50%) rotate(360deg);
+            transform: translate(-50%, -50%) rotate(360deg);
+  }
+}
+
+.wpcf7-response-output {
+  display: none;
 }
 
 .btn {
@@ -2489,18 +2563,6 @@ body.lock-mobile-menu .wrapper::before {
   transition: color 0.3s ease;
 }
 
-@-webkit-keyframes rotation {
-  0% {
-    -webkit-transform: translate(-50%, -50%) rotate(0deg);
-            transform: translate(-50%, -50%) rotate(0deg);
-  }
-
-  100% {
-    -webkit-transform: translate(-50%, -50%) rotate(360deg);
-            transform: translate(-50%, -50%) rotate(360deg);
-  }
-}
-
 @keyframes rotation {
   0% {
     -webkit-transform: translate(-50%, -50%) rotate(0deg);
@@ -2672,6 +2734,10 @@ body.lock-mobile-menu .wrapper::before {
   .form__controls {
     margin-top: 2.94rem;
     gap: 2.1875rem;
+  }
+
+  .wpcf7-not-valid-tip {
+    font-size: 2.1rem;
   }
 
   .btn.btn-lg {
