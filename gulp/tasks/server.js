@@ -1,7 +1,7 @@
 
 export const server = (done) => {
     app.plugins.browsersync.init({
-        proxy: "http://wordpress-dm-chains/",
+        proxy: "localhost:3000",
         notify: false,
         port: 3000,
     });

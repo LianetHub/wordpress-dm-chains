@@ -111,29 +111,23 @@
 	}
 }
 
-// .uppercase-mobile {
-// 	@media (max-width: $md4) {
-// 		text-transform: uppercase;
-// 	}
-// }
-
-// .desktop-only {
-// 	@media (max-width: $md2) {
-// 		display: none;
-// 	}
-// }
-
-// .mobile-only {
-// 	@media (min-width: $md4) {
-// 		display: none;
-// 	}
-// }
-
-// .tablet-only {
-// 	@media (min-width: $md2) {
-// 		display: none;
-// 	}
-// }
+.swiper-button-prev,
+.swiper-button-next {
+	transform: none;
+	margin: 0;
+	position: static;
+	inset: auto;
+	color: inherit;
+	width: 2.6875rem;
+	height: 1.65731rem;
+	font-size: 2rem;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	&::after {
+		display: none;
+	}
+}
 
 // .pagination {
 // 	display: flex;

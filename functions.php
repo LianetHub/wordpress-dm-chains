@@ -32,6 +32,8 @@ function theme_enqueue_scripts()
 	wp_enqueue_script('fancybox-js', get_template_directory_uri() . '/assets/js/libs/fancybox.umd.js', array('jquery'), null, true);
 	wp_enqueue_script('intlTelInput-js', get_template_directory_uri() . '/assets/js/libs/intlTelInput.min.js', array('jquery'), null, true);
 
+	wp_enqueue_script('cdek-widget', 'https://cdn.jsdelivr.net/npm/@cdek-it/widget@3', array(), null, true);
+
 	wp_enqueue_script('app-js', get_template_directory_uri() . '/assets/js/app.min.js', array('jquery'), null, true);
 
 	wp_localize_script('app-js', 'custom_ajax_params', array(
@@ -104,7 +106,6 @@ function rus_to_lat($string)
 		'э' => 'e',
 		'ю' => 'yu',
 		'я' => 'ya',
-		// символы
 		' ' => '-',
 		'—' => '-',
 		'_' => '-',
@@ -113,7 +114,6 @@ function rus_to_lat($string)
 		'/' => '-',
 		':' => '',
 		';' => '',
-		// доп. очистка
 		'"' => '',
 		"'" => '',
 		'(' => '',

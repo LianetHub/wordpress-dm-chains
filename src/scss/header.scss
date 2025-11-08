@@ -52,18 +52,21 @@
 		&::after {
 			content: attr(data-quantity);
 			position: absolute;
-			top: 0.5rem;
-			right: -2rem;
-			height: 2rem;
+			top: em(0.5, 1.875);
+			right: em(-2, 1.875);
+			height: em(2, 1.875);
 			color: #000;
-			font-size: 1.875rem;
-			padding: 0 2rem;
+			padding: 0 em(2, 1.875);
 			background: #f4f8f4;
 			display: flex;
 			align-items: center;
 			text-align: center;
 			clip-path: polygon(em(30, 30) 0, 100% 0, calc(100% - em(30, 30)) 100%, 0 100%);
 			-webkit-clip-path: polygon(em(30, 30) 0, 100% 0, calc(100% - em(30, 30)) 100%, 0 100%);
+			font-size: 1rem;
+			@media (min-width: $md4) {
+				font-size: 1.875rem;
+			}
 		}
 		@media (min-width: $md3) {
 			font-size: 5rem;

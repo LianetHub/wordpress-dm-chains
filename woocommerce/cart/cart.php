@@ -98,6 +98,46 @@
 </div>
 <div id="order" class="popup">
     <div class="popup__form form">
+        <script async src="https://ndd-widget.landpro.site/widget.js"></script>
+        <div id="delivery-widget"></div>
+
+        <script>
+            (function(w) {
+                function startWidget() {
+                    w.YaDelivery.createWidget({
+                        containerId: 'delivery-widget',
+                        params: {
+                            city: "Москва",
+                            size: {
+                                "height": "450px",
+                                "width": "100%"
+                            },
+                            source_platform_station: "GUID_ВАШЕЙ_СТАНЦИИ",
+                            physical_dims_weight_gross: 10000,
+                            delivery_price: "от 100",
+                            delivery_term: "от 1 дня",
+                            show_select_button: true,
+                            filter: {
+                                type: ["pickup_point", "terminal"],
+                                is_yandex_branded: false,
+                                payment_methods: ["already_paid", "card_on_receipt"],
+                                payment_methods_filter: "or"
+                            }
+                        },
+                    });
+                }
+                w.YaDelivery ?
+                    startWidget() :
+                    document.addEventListener('YaNddWidgetLoad', startWidget);
+            })(window);
+
+            document.addEventListener('YaNddWidgetPointSelected', function(data) {
+                console.log(data.detail.id);
+                console.log(data.detail.address.full_address);
+
+            });
+        </script>
+
         <?php echo do_shortcode('[contact-form-7 id="1f99d13" title="Форма заказа"]') ?>
     </div>
 </div>

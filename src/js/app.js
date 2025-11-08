@@ -1,11 +1,20 @@
 "use strict";
 
-
 //  init Fancybox
 if (typeof Fancybox !== "undefined" && Fancybox !== null) {
     Fancybox.bind("[data-fancybox]", {
         dragToClose: false
     });
+
+
+    Fancybox.bind('[data-fancybox-saw]', {
+        showClass: 'fancybox-animate-saw-in',
+        hideClass: 'fancybox-animate-saw-out',
+        dragToClose: false,
+        closeButton: false
+    });
+
+
 }
 
 $(function () {
@@ -124,6 +133,29 @@ $(function () {
 
             new Swiper(slider, {
                 watchOverflow: true,
+                pagination: {
+                    el: pagination,
+                    clickable: true
+                }
+            });
+        });
+    }
+
+    if ($('.saw-block__slider').length) {
+        $('.saw-block__slider').each(function (index, sliderBlock) {
+
+            const slider = $(sliderBlock).find('.swiper')[0];
+            const pagination = $(sliderBlock).find('.saw-block__pagination')[0];
+            const prevBtn = $(sliderBlock).find('.saw-block__prev')[0];
+            const nextBtn = $(sliderBlock).find('.saw-block__next')[0];
+
+            new Swiper(slider, {
+                watchOverflow: true,
+                spaceBetween: 10,
+                navigation: {
+                    nextEl: nextBtn,
+                    prevEl: prevBtn
+                },
                 pagination: {
                     el: pagination,
                     clickable: true
