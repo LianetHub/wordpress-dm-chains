@@ -46,7 +46,7 @@ const mainTasks = gulp.series(
     gulp.parallel(copy, normalize, scss, copyCssLibs, favicon, js, copyJsLibs, jsChunks, json, images)
 );
 
-const dev = gulp.series(reset, mainTasks, gulp.parallel(watcher, server));
+const dev = gulp.series(reset, mainTasks, gulp.parallel(watcher));
 const build = gulp.series(reset, mainTasks);
 const deployZIP = gulp.series(reset, mainTasks, zip);
 

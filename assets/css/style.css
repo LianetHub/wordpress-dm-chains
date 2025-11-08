@@ -638,6 +638,16 @@
   opacity: 1;
 }
 
+.form__radio-btn {
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-orient: vertical;
+  -webkit-box-direction: normal;
+      -ms-flex-direction: column;
+          flex-direction: column;
+}
+
 .form__radio-btn:has(input:checked) .form__radio-btn-field::after,
 .form__radio-btn:has(input:checked) .form .wpcf7-radio label .wpcf7-list-item-label::after,
 .form .wpcf7-radio label .form__radio-btn:has(input:checked) .wpcf7-list-item-label::after,
@@ -653,6 +663,12 @@
 .form__radio-btn:has(input:checked) .form .wpcf7-acceptance label .wpcf7-list-item-label::before,
 .form .wpcf7-acceptance label .form__radio-btn:has(input:checked) .wpcf7-list-item-label::before {
   opacity: 1;
+}
+
+.form__radio-btn .wpcf7-form-control-wrap {
+  -webkit-box-ordinal-group: 2;
+      -ms-flex-order: 1;
+          order: 1;
 }
 
 .form__radio-btn-input:checked ~ .form__radio-btn-field::after,
@@ -809,6 +825,18 @@
 
 .form__total-value {
   font-size: 3.75rem;
+}
+
+.form__widget {
+  width: 100%;
+}
+
+.wpcf7-response-output {
+  display: none;
+}
+
+.wpcf7-not-valid-tip {
+  font-size: 2.1rem;
 }
 
 .btn {

@@ -29,7 +29,7 @@
 
     <?php
     $classes = get_field('classes_block');
-    // echo var_dump($classes['class_c']['gallery']);
+
     function render_class_popup($id, $color, $data)
     {
         if (!$data) return;

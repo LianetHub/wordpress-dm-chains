@@ -97,6 +97,8 @@
 	}
 	// .form__radio-btn
 	&__radio-btn {
+		display: flex;
+		flex-direction: column;
 		&:has(input:checked) {
 			& .form__radio-btn-field {
 				&::after {
@@ -110,6 +112,9 @@
 		}
 		.wpcf7-list-item {
 			@extend .hidden;
+		}
+		.wpcf7-form-control-wrap {
+			order: 1;
 		}
 	}
 	// .form__radio-btn-input
@@ -251,6 +256,18 @@
 	&__total-value {
 		font-size: 3.75rem;
 	}
+	// .form__widget
+	&__widget {
+		width: 100%;
+	}
+}
+
+.wpcf7-response-output {
+	display: none;
+}
+
+.wpcf7-not-valid-tip {
+	font-size: 2.1rem;
 }
 
 .btn {
