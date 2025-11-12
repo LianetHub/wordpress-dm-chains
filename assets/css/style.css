@@ -2066,7 +2066,15 @@ body.lock-mobile-menu .wrapper::before {
   font-size: 1.75rem;
 }
 
-.creating-block__product-add-to-cart {
+.creating-block__footer {
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-orient: vertical;
+  -webkit-box-direction: normal;
+      -ms-flex-direction: column;
+          flex-direction: column;
+  gap: 2rem;
   margin-top: 1.5625rem;
 }
 
@@ -3448,7 +3456,7 @@ body.lock-mobile-menu .wrapper::before {
     font-size: 2.1875rem;
   }
 
-  .creating-block__product-add-to-cart {
+  .creating-block__footer {
     margin-top: 6.25rem;
   }
 

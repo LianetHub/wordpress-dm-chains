@@ -34,6 +34,44 @@ function theme_enqueue_scripts()
 	wp_enqueue_script('cdek-widget', 'https://cdn.jsdelivr.net/npm/@cdek-it/widget@3', array(), null, true);
 	wp_enqueue_script('yandex-widget', 'https://ndd-widget.landpro.site/widget.js', array(), null, true);
 
+	// -----------------------------------------------------------------
+	// УСЛОВНАЯ ЗАГРУЗКА СКРИПТА КОНФИГУРАТОРА
+	// -----------------------------------------------------------------
+
+	if (is_page(65)) {
+
+
+		$product_id = 127;
+		$rows = get_chain_combinations_data($product_id);
+		$config = build_chain_config($rows);
+
+		$script_data = array(
+			'chainConfig' => $config,
+			'ajaxUrl' => admin_url('admin-ajax.php'),
+			'defaultImageSrc' => get_template_directory_uri() . '/assets/img/chains/pitch.png',
+			'addToCartAction' => 'woocommerce_add_to_cart',
+			'getProductDataAction' => 'get_product_data',
+			'isWpAjax' => true,
+		);
+
+
+		wp_enqueue_script(
+			'my-chain-configurator',
+			get_template_directory_uri() . '/assets/js/chain-configurator.js',
+			array('jquery'),
+			'1.0',
+			true
+		);
+
+
+		wp_localize_script(
+			'my-chain-configurator',
+			'ConfigData',
+			$script_data
+		);
+	}
+
+
 	wp_enqueue_script('app-js', get_template_directory_uri() . '/assets/js/app.min.js', array('jquery'), null, true);
 
 	wp_localize_script('app-js', 'custom_ajax_params', array(
@@ -53,6 +91,8 @@ function add_async_attribute($tag, $handle, $src)
 	return $tag;
 }
 add_filter('script_loader_tag', 'add_async_attribute', 10, 3);
+
+
 
 
 // =========================================================================

@@ -417,12 +417,18 @@
 			font-size: 2.8125rem;
 		}
 	}
-	// .creating-block__product-add-to-cart
-	&__product-add-to-cart {
+	// .creating-block__footer
+	&__footer {
+		display: flex;
+		flex-direction: column;
+		gap: 2rem;
 		margin-top: rem(25);
 		@media (min-width: $md1) {
 			margin-top: rem(100);
 		}
+	}
+	// .creating-block__product-add-to-cart
+	&__product-add-to-cart {
 	}
 	// .creating-block__result
 	&__result {
