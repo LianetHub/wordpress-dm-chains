@@ -1,13 +1,22 @@
 "use strict";
 
+
+
+
 //  init Fancybox
 if (typeof Fancybox !== "undefined" && Fancybox !== null) {
     Fancybox.bind("[data-fancybox]", {
+        Carousel: {
+            touch: false,
+        },
         dragToClose: false
     });
 
 
     Fancybox.bind('[data-fancybox-saw]', {
+        Carousel: {
+            touch: false,
+        },
         showClass: 'fancybox-animate-saw-in',
         hideClass: 'fancybox-animate-saw-out',
         dragToClose: false,

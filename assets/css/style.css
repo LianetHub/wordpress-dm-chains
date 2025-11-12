@@ -189,6 +189,7 @@
   max-width: 68.75rem;
   padding: 2rem 1rem;
   border-radius: 1rem;
+  overflow-x: hidden;
 }
 
 .popup.popup--saw {
@@ -616,6 +617,10 @@
   background: #fff1ed;
 }
 
+.form__group {
+  max-width: 100%;
+}
+
 .form__group-caption {
   color: #000;
   font-size: 2rem;
@@ -839,6 +844,16 @@
 
 .form__widget {
   width: 100%;
+  position: relative;
+  height: auto;
+  overflow: hidden;
+}
+
+.form__widget.hidden,
+.form .wpcf7-radio label input.form__widget,
+.form .wpcf7-acceptance label input.form__widget,
+.form__radio-btn .form__widget.wpcf7-list-item {
+  display: none;
 }
 
 .wpcf7-form:has(.wpcf7-submit[disabled]) .form__submit {
@@ -2050,6 +2065,7 @@ body.lock-mobile-menu .wrapper::before {
   aspect-ratio: 0.7496251874;
   width: 100%;
   height: 100%;
+  max-width: 80vw;
   display: -webkit-box;
   display: -ms-flexbox;
   display: flex;
@@ -3633,6 +3649,14 @@ body.lock-mobile-menu .wrapper::before {
             transform: none;
     opacity: 1;
     visibility: visible;
+  }
+}
+
+@media (max-width: 750px) {
+  .form__widget .widget__header {
+    bottom: auto !important;
+    top: 0 !important;
+    width: 100% !important;
   }
 }
 

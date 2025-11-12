@@ -48,6 +48,7 @@
 	}
 	// .form__group
 	&__group {
+		max-width: 100%;
 	}
 	// .form__group-caption
 	&__group-caption {
@@ -259,6 +260,19 @@
 	// .form__widget
 	&__widget {
 		width: 100%;
+		position: relative;
+		height: auto;
+		overflow: hidden;
+		@media (max-width: 750px) {
+			.widget__header {
+				bottom: auto !important;
+				top: 0 !important;
+				width: 100% !important;
+			}
+		}
+		&.hidden {
+			display: none;
+		}
 	}
 }
 

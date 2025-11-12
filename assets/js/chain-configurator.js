@@ -19,7 +19,7 @@ jQuery(document).ready(function ($) {
     const $quizItems = $('.creating-quiz__item');
     const $quantityLinksQuantityInput = $('#links_quantity');
     const $addToCartButton = $('.creating-block__product-add-to-cart');
-    const $productQuantityBlock = $('.creatin-block__quantity');
+    const $productQuantityBlock = $('.creating-block__quantity');
     const $productQuantityInput = $productQuantityBlock.find('input[name="quantity"]');
 
     function resetSubsequentSteps(startIndex) {
