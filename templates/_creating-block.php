@@ -36,9 +36,9 @@
                     </div>
                     <div class="creating-quiz__body">
                         <div class="creating-quiz__quantity-block quantity-block">
-                            <button type="button" class="quantity-block__down icon-minus"></button>
-                            <input type="number" name="quantity" class="quantity-block__input" value="1">
-                            <button type="button" class="quantity-block__up icon-plus"></button>
+                            <button type="button" disabled class="quantity-block__down icon-minus"></button>
+                            <input type="number" name="quantity" class="quantity-block__input" value="" min="" max="">
+                            <button type="button" disabled class="quantity-block__up icon-plus"></button>
                         </div>
                     </div>
                 </div>
@@ -87,7 +87,7 @@
                         pitch: null,
                         thickness: null,
                         class: null,
-                        quantity: 1,
+                        quantity: null,
                         currentStep: 1
                     },
                     selectedProduct: null
@@ -98,22 +98,39 @@
                 const $quizItems = $('.creating-quiz__item');
                 const $quantityInput = $('.quantity-block__input');
                 const $addToCartButton = $('.creating-block__product-add-to-cart');
+                const defaultImageSrc = '<?php echo get_template_directory_uri(); ?>/assets/img/chains/pitch.png';
 
                 // -------------------
                 // Функции конфигуратора
                 // -------------------
+
+                function resetSubsequentSteps(startIndex) {
+                    for (let i = startIndex; i < stepKeys.length; i++) {
+                        chainConfigurator.state[stepKeys[i]] = null;
+
+                        if (i < 3) {
+                            $quizItems.eq(i).find('.creating-quiz__body').empty();
+                        }
+
+                        $quizItems.eq(i).removeClass('completed');
+                    }
+
+                    if (startIndex <= stepKeys.length - 1) {
+                        $quantityInput.val(1);
+                    }
+
+                    chainConfigurator.selectedProduct = null;
+                    resetProductDisplay();
+                }
+
                 function updateState(key, value) {
                     const keyIndex = stepKeys.indexOf(key);
                     const isValueChanging = chainConfigurator.state[key] !== value;
+
                     chainConfigurator.state[key] = value;
 
                     if (keyIndex < 3 && isValueChanging) {
-                        for (let i = keyIndex + 1; i < stepKeys.length - 1; i++) {
-                            chainConfigurator.state[stepKeys[i]] = null;
-                            $quizItems.eq(i).find('.creating-quiz__body').empty();
-                        }
-                        chainConfigurator.selectedProduct = null;
-                        resetProductDisplay();
+                        resetSubsequentSteps(keyIndex + 1);
                     } else if (key === 'quantity') {
                         if (chainConfigurator.selectedProduct) {
                             findCombinationAndPrice(true);
@@ -121,6 +138,16 @@
                     }
 
                     updateResultsDisplay();
+
+                    if (value !== null && keyIndex < 3) {
+                        $quizItems.eq(keyIndex).addClass('completed');
+                    } else if (key === 'quantity' && chainConfigurator.selectedProduct) {
+                        if (parseInt(value) > 0) {
+                            $quizItems.eq(keyIndex).addClass('completed');
+                        } else {
+                            $quizItems.eq(keyIndex).removeClass('completed');
+                        }
+                    }
                 }
 
                 function getFilteredOptions(stepKey) {
@@ -172,28 +199,61 @@
                     $currentStepEl.addClass('active');
                     chainConfigurator.state.currentStep = stepIndex;
 
+                    $('.creating-quiz__back').prop('disabled', false);
+
                     if (stepIndex <= 3) {
                         const stepKey = stepKeys[stepIndex - 1];
-                        renderStepOptions(stepKey, $currentStepEl.find('.creating-quiz__body'));
+                        if (stepIndex === 1 || chainConfigurator.state[stepKeys[stepIndex - 2]]) {
+                            renderStepOptions(stepKey, $currentStepEl.find('.creating-quiz__body'));
+                        } else {
+                            $currentStepEl.find('.creating-quiz__body').html('<p>Сначала выберите опцию в предыдущем шаге.</p>');
+                        }
+                    } else if (stepIndex === 4) {
+                        if (chainConfigurator.selectedProduct) {
+                            const min = chainConfigurator.selectedProduct.quantityMin || 1;
+                            const max = chainConfigurator.selectedProduct.quantityMax || Infinity;
+
+                            let currentQuantity = parseInt($quantityInput.val()) || 1;
+                            if (currentQuantity < min) currentQuantity = min;
+                            if (currentQuantity > max) currentQuantity = max;
+
+                            chainConfigurator.state.quantity = currentQuantity;
+                            $quantityInput.val(currentQuantity);
+
+                            updateQuantityButtons(min, max);
+
+                            if (currentQuantity > 0) {
+                                $quizItems.eq(stepIndex - 1).addClass('completed');
+                            }
+                        } else {
+                            $currentStepEl.find('.creating-quiz__body').html('<p>Сначала выберите все параметры (Шаг 1-3).</p>');
+                        }
                     }
 
-                    $addToCartButton.prop('disabled', !(chainConfigurator.selectedProduct && stepIndex >= 4));
+                    $addToCartButton.prop('disabled', !(chainConfigurator.selectedProduct && stepIndex === 4));
                 }
 
                 function updateResultsDisplay() {
                     $('.creating-block__result-block').each(function(index) {
                         const key = stepKeys[index];
                         let value = chainConfigurator.state[key];
+
                         if (index < 3 && value) {
                             const option = chainConfigurator.data.steps[key].options.find(opt => opt.value === value);
                             value = option ? option.label : value;
                         }
+
+                        if (key === 'quantity') {
+                            value = chainConfigurator.state.quantity || '';
+                        }
+
                         $(this).find('.creating-block__result-value').text(value || '');
                     });
                 }
 
                 function findCombinationAndPrice(isQuantityOnly = false) {
                     const state = chainConfigurator.state;
+
                     if (!state.pitch || !state.thickness || !state.class) {
                         chainConfigurator.selectedProduct = null;
                         $('#product_id_selected').val('');
@@ -208,6 +268,10 @@
                     );
 
                     if (selectedProduct) {
+
+                        const isProductChanging = !chainConfigurator.selectedProduct ||
+                            chainConfigurator.selectedProduct.variation_id !== selectedProduct.variation_id;
+
                         chainConfigurator.selectedProduct = selectedProduct;
                         const productID = selectedProduct.variation_id;
 
@@ -221,13 +285,36 @@
 
                         $('#product_id_selected').val(productID);
 
+                        const minQuantity = selectedProduct.quantityMin || 1;
+                        const maxQuantity = selectedProduct.quantityMax || 100;
+
+                        if (isProductChanging) {
+                            chainConfigurator.state.quantity = minQuantity;
+                            $quantityInput.val(minQuantity);
+                        }
+
+                        let currentQuantity = parseInt($quantityInput.val()) || minQuantity;
+                        if (currentQuantity < minQuantity) currentQuantity = minQuantity;
+                        if (currentQuantity > maxQuantity) currentQuantity = maxQuantity;
+
+                        chainConfigurator.state.quantity = currentQuantity;
+
+                        $('.creating-quiz__quantity-block .quantity-block__input').attr({
+                            'value': currentQuantity,
+                            'min': minQuantity,
+                            'max': maxQuantity
+                        });
+
+                        updateResultsDisplay();
+                        updateQuantityButtons(minQuantity, maxQuantity);
+
                         $.ajax({
                             url: $form.attr('action'),
                             type: 'POST',
                             data: {
                                 action: 'get_product_data',
                                 product_id: productID,
-                                quantity: state.quantity
+                                quantity: chainConfigurator.state.quantity
                             },
                             success: function(response) {
                                 if (response.success && response.data) {
@@ -244,27 +331,47 @@
                                 $addToCartButton.prop('disabled', true);
                             }
                         });
+
+                        if (chainConfigurator.state.quantity > 0) {
+                            $quizItems.eq(3).addClass('completed');
+                        } else {
+                            $quizItems.eq(3).removeClass('completed');
+                        }
+                        $addToCartButton.prop('disabled', chainConfigurator.state.currentStep !== 4);
+
                     } else {
                         chainConfigurator.selectedProduct = null;
                         $('.creating-block__product-price').html('Комбинация недоступна');
                         $addToCartButton.prop('disabled', true);
                         $('#product_id_selected').val('');
+                        $quizItems.eq(3).removeClass('completed');
                     }
                 }
 
                 function updateProductDisplay(productData, selected) {
                     const $productBlock = $('.creating-block__product');
-                    const imageSrc = selected.image && selected.image !== '' ? selected.image : '<?php echo get_template_directory_uri(); ?>/assets/img/chains/pitch.png';
+                    const $imageContainer = $productBlock.find('.creating-block__product-image');
+                    const currentImageSrc = $imageContainer.find('img').attr('src');
 
-                    $productBlock.find('.creating-block__product-image').html(`<img src="${imageSrc}" alt="Цепь">`);
+                    const newImageSrc = selected.image && selected.image !== '' ? selected.image : defaultImageSrc;
+
+                    if (currentImageSrc !== newImageSrc) {
+                        $imageContainer.html(`<img src="${newImageSrc}" alt="Цепь">`);
+                    }
+
                     $productBlock.find('.creating-block__product-price').html(`Цена за шт.: ${productData.price_html}`);
-                    if (chainConfigurator.state.currentStep >= 4) {
+
+                    if (chainConfigurator.state.currentStep === 4) {
                         $addToCartButton.prop('disabled', false);
                     }
                 }
 
                 function resetProductDisplay() {
-                    $('.creating-block__product-image').html('<img src="<?php echo get_template_directory_uri(); ?>/assets/img/chains/pitch.png" alt="Фото цепи">');
+                    const $imageContainer = $('.creating-block__product-image');
+                    const currentImageSrc = $imageContainer.find('img').attr('src');
+                    if (currentImageSrc !== defaultImageSrc) {
+                        $imageContainer.html(`<img src="${defaultImageSrc}" alt="Фото цепи">`);
+                    }
                     $('.creating-block__product-price').html('Цена за шт.:______________');
                     $addToCartButton.prop('disabled', true);
                 }
@@ -274,11 +381,12 @@
                         pitch: null,
                         thickness: null,
                         class: null,
-                        quantity: 1,
+                        quantity: null,
                         currentStep: 1
                     };
                     chainConfigurator.selectedProduct = null;
                     $quizItems.find('.creating-quiz__body').empty();
+                    $quizItems.removeClass('completed');
                     $quantityInput.val(1);
                     $('#product_id_selected').val('');
                     resetProductDisplay();
@@ -286,16 +394,10 @@
                     updateResultsDisplay();
                 }
 
-                function updateStepCompletion() {
-                    $quizItems.each(function(index) {
-                        const stepKey = stepKeys[index];
-                        const value = chainConfigurator.state[stepKey];
-                        if (value) {
-                            $(this).addClass('completed');
-                        } else {
-                            $(this).removeClass('completed');
-                        }
-                    });
+                function updateQuantityButtons(min, max) {
+                    const currentQuantity = parseInt($quantityInput.val()) || 1;
+                    $('.quantity-block__down').prop('disabled', currentQuantity <= min);
+                    $('.quantity-block__up').prop('disabled', currentQuantity >= max);
                 }
 
                 // -------------------
@@ -306,26 +408,82 @@
                     const stepKey = $input.attr('name');
                     const newValue = $input.val();
                     const currentStepIndex = $quizItems.index($input.closest('.creating-quiz__item')) + 1;
+
                     updateState(stepKey, newValue);
-                    if (stepKey === 'class') findCombinationAndPrice();
+
+                    if (currentStepIndex === 3) {
+                        findCombinationAndPrice();
+                    }
 
                     const nextStepIndex = currentStepIndex + 1;
-                    if (nextStepIndex <= $quizItems.length) renderStep(nextStepIndex);
+                    if (nextStepIndex <= $quizItems.length) {
+                        renderStep(nextStepIndex);
+                    }
                 });
 
-                $('.creating-quiz__back').on('click', function() {
-                    const currentStepIndex = $quizItems.index($(this).closest('.creating-quiz__item')) + 1;
-                    if (currentStepIndex > 1) renderStep(currentStepIndex - 1);
+                $('.creating-quiz__header').on('click', '.creating-quiz__back', function() {
+                    const $currentActiveStep = $(this).closest('.creating-quiz__item');
+                    const currentStepIndex = $quizItems.index($currentActiveStep) + 1;
+
+                    const currentKeyIndex = currentStepIndex - 1;
+
+                    if (currentStepIndex <= 3) {
+
+                        resetSubsequentSteps(currentKeyIndex);
+                    } else if (currentStepIndex === 4) {
+                        chainConfigurator.state.quantity = chainConfigurator.selectedProduct ? chainConfigurator.selectedProduct.quantityMin || 1 : 1;
+                        $quantityInput.val(chainConfigurator.state.quantity);
+                        $quizItems.eq(3).removeClass('completed');
+                        updateResultsDisplay();
+                        renderStep(4);
+                        return;
+                    }
+
+                    renderStep(currentStepIndex);
+
+                    updateResultsDisplay();
                 });
 
                 $('.quantity-block').on('click', '.quantity-block__up, .quantity-block__down', function() {
                     let currentQuantity = parseInt($quantityInput.val()) || 1;
                     const isPlus = $(this).hasClass('icon-plus');
-                    if (isPlus) currentQuantity++;
-                    else if (currentQuantity > 1) currentQuantity--;
+
+                    let min = $quantityInput.attr('min') ? parseInt($quantityInput.attr('min')) : 1;
+                    let max = $quantityInput.attr('max') ? parseInt($quantityInput.attr('max')) : Infinity;
+
+                    min = isNaN(min) ? 1 : min;
+                    max = isNaN(max) ? Infinity : max;
+
+                    if (isPlus && currentQuantity < max) {
+                        currentQuantity++;
+                    } else if (!isPlus && currentQuantity > min) {
+                        currentQuantity--;
+                    }
+
                     $quantityInput.val(currentQuantity);
                     updateState('quantity', currentQuantity);
-                    if (chainConfigurator.selectedProduct) findCombinationAndPrice(true);
+
+                    updateQuantityButtons(min, max);
+                });
+
+                $quantityInput.on('change', function() {
+                    let currentQuantity = parseInt($(this).val());
+
+                    let min = $quantityInput.attr('min') ? parseInt($quantityInput.attr('min')) : 1;
+                    let max = $quantityInput.attr('max') ? parseInt($quantityInput.attr('max')) : Infinity;
+
+                    min = isNaN(min) ? 1 : min;
+                    max = isNaN(max) ? Infinity : max;
+
+                    if (isNaN(currentQuantity) || currentQuantity < 1) currentQuantity = 1;
+
+                    if (currentQuantity < min) currentQuantity = min;
+                    if (currentQuantity > max) currentQuantity = max;
+
+                    $(this).val(currentQuantity);
+
+                    updateState('quantity', currentQuantity);
+                    updateQuantityButtons(min, max);
                 });
 
                 // -------------------
@@ -338,6 +496,11 @@
 
                     if (!productID) {
                         alert('Сначала выберите все параметры продукта.');
+                        return;
+                    }
+
+                    if (chainConfigurator.state.currentStep !== 4 || quantity < 1) {
+                        alert('Сначала введите корректное количество звеньев.');
                         return;
                     }
 

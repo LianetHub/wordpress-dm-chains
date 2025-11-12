@@ -2070,6 +2070,11 @@ body.lock-mobile-menu .wrapper::before {
     margin-top: -.1875rem
 }
 
+.creating-quiz__item:last-child .creating-quiz__back {
+    opacity: 0 !important;
+    visibility: hidden !important
+}
+
 .creating-quiz__header {
     display: -webkit-box;
     display: -ms-flexbox;
@@ -2100,7 +2105,20 @@ body.lock-mobile-menu .wrapper::before {
     -webkit-transition: color .3s ease;
     transition: color .3s ease;
     opacity: 0;
-    visibility: hidden
+    visibility: hidden;
+    width: 3rem;
+    height: 3rem;
+    display: -webkit-box;
+    display: -ms-flexbox;
+    display: flex;
+    -webkit-box-pack: center;
+    -ms-flex-pack: center;
+    justify-content: center;
+    -webkit-box-align: center;
+    -ms-flex-align: center;
+    align-items: center;
+    -ms-flex-negative: 0;
+    flex-shrink: 0
 }
 
 .creating-quiz__body {
@@ -2166,6 +2184,11 @@ body.lock-mobile-menu .wrapper::before {
     transition: color .3s ease
 }
 
+.quantity-block__down:disabled {
+    pointer-events: none;
+    opacity: .5
+}
+
 .quantity-block__input {
     background: #d9d9d9;
     height: 1.6666666667em;
@@ -2196,6 +2219,11 @@ body.lock-mobile-menu .wrapper::before {
     align-items: center;
     -webkit-transition: color .3s ease;
     transition: color .3s ease
+}
+
+.quantity-block__up:disabled {
+    pointer-events: none;
+    opacity: .5
 }
 
 .for-buyers {

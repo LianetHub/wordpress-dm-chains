@@ -300,7 +300,6 @@ function get_chain_combinations_data($product_id)
 	return $combinations;
 }
 
-
 function build_chain_config(array $rows): array
 {
 	$normalizePitchValue = static function (?string $pitch): string {
@@ -319,7 +318,6 @@ function build_chain_config(array $rows): array
 	};
 
 	$pitchLabel = static function (string $rawPitch): string {
-
 		return trim($rawPitch);
 	};
 
@@ -341,13 +339,59 @@ function build_chain_config(array $rows): array
 		return "/assets/img/chains/class-{$classVal}.png";
 	};
 
+	$parsePitchToFloat = static function (string $pitchVal): float {
+		if ($pitchVal === '') return 0.0;
+		if (strpos($pitchVal, '/') !== false) {
+			$parts = explode('/', $pitchVal, 2);
+			$num = floatval(trim($parts[0]));
+			$den = floatval(trim($parts[1]));
+			if ($den > 0) return $num / $den;
+		}
+		return floatval(str_replace(',', '.', $pitchVal));
+	};
+
+	$calculateQuantityRange = static function (string $pitchVal): array {
+		$pitch = (float)(strpos($pitchVal, '/') !== false
+			? (explode('/', $pitchVal)[0] / explode('/', $pitchVal)[1])
+			: str_replace(',', '.', $pitchVal)
+		);
+
+		$pitch = (float)$pitch;
+		if ($pitch <= 0.0) return [0, 0];
+
+		$table = [
+			'0.25'  => [10 => [56, 60], 12 => [64, 66], 14 => [68, 72], 16 => [72, 74], 18 => [74, 76], 20 => [80, 84]],
+			'0.325' => [10 => [60, 64], 12 => [64, 68], 14 => [72, 76], 16 => [66, 68], 18 => [72, 74], 20 => [76, 81]],
+			'0.375' => [10 => [54, 56], 12 => [56, 60], 14 => [66, 68], 16 => [64, 66], 18 => [68, 72], 20 => [72, 76]],
+			'0.404' => [10 => [50, 52], 12 => [54, 56], 14 => [60, 62], 16 => [60, 62], 18 => [64, 66], 20 => [70, 74]],
+		];
+
+		$closest = null;
+		foreach ($table as $p => $ranges) {
+			if (abs($p - $pitch) < 0.01) {
+				$closest = $ranges;
+				break;
+			}
+		}
+
+		if (!$closest) {
+
+			$lengthInches = 16;
+			$DL = ((($lengthInches * 2.54) * 2) / ($pitch * 25.4));
+			$qMin = (int)round($DL - 2);
+			$qMax = (int)round($DL + 2);
+			return [$qMin, $qMax];
+		}
+
+		if (isset($closest[16])) return $closest[16];
+		return [0, 0];
+	};
 
 	$pitchOnly = [];
 	$thicknessSeen = [];
 	$classSeen = [];
 	$classAvailMatrix = [];
 	$combinations = [];
-
 	$thicknessAvailMap = [];
 
 	foreach ($rows as $row) {
@@ -381,7 +425,6 @@ function build_chain_config(array $rows): array
 		}
 
 		if ($hasPitch && $hasThickness && $hasClass) {
-
 			if (!isset($classAvailMatrix[$classVal])) {
 				$classAvailMatrix[$classVal] = [];
 			}
@@ -390,6 +433,8 @@ function build_chain_config(array $rows): array
 			}
 			$classAvailMatrix[$classVal][$pitchVal][$thVal] = true;
 
+			[$qMin, $qMax] = $calculateQuantityRange($pitchVal);
+
 			$combinations[] = [
 				'pitch'        => $pitchVal,
 				'thickness'    => $thVal,
@@ -397,12 +442,13 @@ function build_chain_config(array $rows): array
 				'variation_id' => $row['variation_id'] ?? null,
 				'price_html'   => $row['price_html'] ?? '',
 				'image'        => $row['image'] ?? '',
+				'quantityMin'  => $qMin,
+				'quantityMax'  => $qMax,
 			];
 		}
 	}
 
 	foreach ($thicknessAvailMap as $thVal => $pitchesSet) {
-
 		if (!isset($thicknessSeen[$thVal])) {
 			$thicknessSeen[$thVal] = [
 				'value' => $thVal,
@@ -411,19 +457,13 @@ function build_chain_config(array $rows): array
 				'availableFor' => [],
 			];
 		}
-
 		foreach (array_keys($pitchesSet) as $pVal) {
 			$thicknessSeen[$thVal]['availableFor'][] = ['pitch' => $pVal];
 		}
-
-		usort($thicknessSeen[$thVal]['availableFor'], static function ($a, $b) {
-			return strcmp($a['pitch'], $b['pitch']);
-		});
+		usort($thicknessSeen[$thVal]['availableFor'], static fn($a, $b) => strcmp($a['pitch'], $b['pitch']));
 	}
 
-
 	foreach ($classAvailMatrix as $cls => $pitchMap) {
-
 		if (!isset($classSeen[$cls])) {
 			$classSeen[$cls] = [
 				'value' => $cls,
@@ -432,71 +472,36 @@ function build_chain_config(array $rows): array
 				'availableFor' => [],
 			];
 		}
-
 		$entries = [];
 		foreach ($pitchMap as $pVal => $thSet) {
 			$ths = array_keys($thSet);
 			sort($ths, SORT_NATURAL);
-			$entries[] = [
-				'pitch' => $pVal,
-				'thickness' => $ths,
-			];
+			$entries[] = ['pitch' => $pVal, 'thickness' => $ths];
 		}
-
-		usort($entries, static function ($a, $b) {
-			return strcmp($a['pitch'], $b['pitch']);
-		});
-
+		usort($entries, static fn($a, $b) => strcmp($a['pitch'], $b['pitch']));
 		$classSeen[$cls]['availableFor'] = $entries;
 	}
-	$sortByNumericLike = static function ($a, $b, $key) {
-		return strcmp($a[$key], $b[$key]);
-	};
-
 
 	$pitchOptions = array_values($pitchOnly);
-	usort($pitchOptions, static function ($a, $b) {
-		return strcmp($a['value'], $b['value']);
-	});
-
+	usort($pitchOptions, static fn($a, $b) => strcmp($a['value'], $b['value']));
 
 	$thicknessOptions = array_values($thicknessSeen);
-	usort($thicknessOptions, static function ($a, $b) {
-
-		$da = (float)$a['value'];
-		$db = (float)$b['value'];
-		return $da <=> $db;
-	});
-
+	usort($thicknessOptions, static fn($a, $b) => ((float)$a['value']) <=> ((float)$b['value']));
 
 	$classOrder = ['A' => 1, 'B' => 2, 'C' => 3];
 	$classOptions = array_values($classSeen);
-	usort($classOptions, static function ($a, $b) use ($classOrder) {
-		$wa = $classOrder[$a['value']] ?? 999;
-		$wb = $classOrder[$b['value']] ?? 999;
-		if ($wa === $wb) return strcmp($a['value'], $b['value']);
-		return $wa <=> $wb;
-	});
-
+	usort($classOptions, static fn($a, $b) => ($classOrder[$a['value']] ?? 999) <=> ($classOrder[$b['value']] ?? 999));
 
 	return [
 		'steps' => [
-			'pitch' => [
-				'title' => 'pitch',
-				'options' => $pitchOptions,
-			],
-			'thickness' => [
-				'title' => 'thickness',
-				'options' => $thicknessOptions,
-			],
-			'class' => [
-				'title' => 'class',
-				'options' => $classOptions,
-			],
+			'pitch' => ['title' => 'pitch', 'options' => $pitchOptions],
+			'thickness' => ['title' => 'thickness', 'options' => $thicknessOptions],
+			'class' => ['title' => 'class', 'options' => $classOptions],
 		],
 		'combinations' => $combinations,
 	];
 }
+
 
 // =========================================================================
 // 4. AJAX HANDLERS
