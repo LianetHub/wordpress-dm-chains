@@ -24,6 +24,7 @@
                             $unit_price = $_product->get_price();
                             $formatted_unit_price = wc_price($unit_price);
                             $quantity = $cart_item['quantity'];
+                            $links_count = $cart_item['links_count'];
                             $remove_url = esc_url(wc_get_cart_remove_url($cart_item_key));
 
                             $attr_html = [];
@@ -41,7 +42,7 @@
                                 }
                             }
 
-                            $attr_html[] = "{$quantity_label}: {$quantity}";
+                            $attr_html[] = "{$quantity_label}: {$links_count}";
                     ?>
 
                             <div class="cart__item" data-cart-key="<?php echo $cart_item_key; ?>">
@@ -57,7 +58,7 @@
                                         <?php echo $formatted_unit_price; ?> х <?php echo $quantity; ?>
                                     </div>
                                 </div>
-                                <div class="cart__item-quantity quantity-block">
+                                <div class="cart__item-quantity quantity-block quantity-block--small">
                                     <button type="button" class="quantity-block__down icon-minus" data-action="minus"></button>
                                     <input type="number" name="quantity" class="quantity-block__input" value="<?php echo $quantity; ?>" min="1" data-cart-key="<?php echo $cart_item_key; ?>">
                                     <button type="button" class="quantity-block__up icon-plus" data-action="plus"></button>

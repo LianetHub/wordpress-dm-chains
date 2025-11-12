@@ -37,7 +37,7 @@
                     <div class="creating-quiz__body">
                         <div class="creating-quiz__quantity-block quantity-block">
                             <button type="button" disabled class="quantity-block__down icon-minus"></button>
-                            <input type="number" name="quantity" class="quantity-block__input" value="" min="" max="">
+                            <input type="number" name="links_quantity" id="links_quantity" class="quantity-block__input" value="" min="" max="">
                             <button type="button" disabled class="quantity-block__up icon-plus"></button>
                         </div>
                     </div>
@@ -49,6 +49,13 @@
                 </div>
                 <div class="creating-block__product-price">
                     Цена за шт.:______________
+                </div>
+                <div class="creatin-block__quantity" style="display: none;">
+                    <div class="quantity-block quantity-block--small">
+                        <button type="button" class="quantity-block__down icon-minus" data-action="minus"></button>
+                        <input type="number" name="quantity" class="quantity-block__input" value="1" min="1">
+                        <button type="button" class="quantity-block__up icon-plus" data-action="plus"></button>
+                    </div>
                 </div>
                 <button type="submit" disabled class="creating-block__product-add-to-cart btn btn-primary">В корзину</button>
             </div>
@@ -73,7 +80,6 @@
         </form>
         <script>
             $(function() {
-
                 const chainConfig = <?php
                                     $product_id = 127;
                                     $rows = get_chain_combinations_data($product_id);
@@ -87,17 +93,20 @@
                         pitch: null,
                         thickness: null,
                         class: null,
-                        quantity: null,
+                        links_count: null,
+                        quantity: 1,
                         currentStep: 1
                     },
                     selectedProduct: null
                 };
 
                 const $form = $('.creating-block__content');
-                const stepKeys = ['pitch', 'thickness', 'class', 'quantity'];
+                const stepKeys = ['pitch', 'thickness', 'class', 'links_count'];
                 const $quizItems = $('.creating-quiz__item');
-                const $quantityInput = $('.quantity-block__input');
+                const $quantityLinksQuantityInput = $('#links_quantity');
                 const $addToCartButton = $('.creating-block__product-add-to-cart');
+                const $productQuantityBlock = $('.creatin-block__quantity');
+                const $productQuantityInput = $productQuantityBlock.find('input[name="quantity"]');
                 const defaultImageSrc = '<?php echo get_template_directory_uri(); ?>/assets/img/chains/pitch.png';
 
                 // -------------------
@@ -116,7 +125,7 @@
                     }
 
                     if (startIndex <= stepKeys.length - 1) {
-                        $quantityInput.val(1);
+                        $quantityLinksQuantityInput.val('');
                     }
 
                     chainConfigurator.selectedProduct = null;
@@ -131,17 +140,13 @@
 
                     if (keyIndex < 3 && isValueChanging) {
                         resetSubsequentSteps(keyIndex + 1);
-                    } else if (key === 'quantity') {
-                        if (chainConfigurator.selectedProduct) {
-                            findCombinationAndPrice(true);
-                        }
                     }
 
                     updateResultsDisplay();
 
                     if (value !== null && keyIndex < 3) {
                         $quizItems.eq(keyIndex).addClass('completed');
-                    } else if (key === 'quantity' && chainConfigurator.selectedProduct) {
+                    } else if (key === 'links_count' && chainConfigurator.selectedProduct) {
                         if (parseInt(value) > 0) {
                             $quizItems.eq(keyIndex).addClass('completed');
                         } else {
@@ -153,7 +158,7 @@
                 function getFilteredOptions(stepKey) {
                     const options = chainConfigurator.data.steps[stepKey].options;
                     const state = chainConfigurator.state;
-                    if (stepKey === 'pitch' || stepKey === 'quantity') return options;
+                    if (stepKey === 'pitch' || stepKey === 'links_count') return options;
 
                     if (stepKey === 'thickness') {
                         const availableThicknesses = chainConfigurator.data.combinations
@@ -210,19 +215,26 @@
                         }
                     } else if (stepIndex === 4) {
                         if (chainConfigurator.selectedProduct) {
-                            const min = chainConfigurator.selectedProduct.quantityMin || 1;
-                            const max = chainConfigurator.selectedProduct.quantityMax || Infinity;
+                            const min = chainConfigurator.selectedProduct.countLinksMin || 1;
+                            const max = chainConfigurator.selectedProduct.countLinksMax || Infinity;
 
-                            let currentQuantity = parseInt($quantityInput.val()) || 1;
-                            if (currentQuantity < min) currentQuantity = min;
-                            if (currentQuantity > max) currentQuantity = max;
+                            let currentQuantityLinks = parseInt($quantityLinksQuantityInput.val());
 
-                            chainConfigurator.state.quantity = currentQuantity;
-                            $quantityInput.val(currentQuantity);
+                            if (chainConfigurator.state.links_count === null || isNaN(currentQuantityLinks) || currentQuantityLinks < min || currentQuantityLinks > max) {
+                                currentQuantityLinks = min;
+                                chainConfigurator.state.links_count = currentQuantityLinks;
+                                $quantityLinksQuantityInput.val(currentQuantityLinks);
+                            }
+
+                            $quantityLinksQuantityInput.attr({
+                                'min': min,
+                                'max': max
+                            });
 
                             updateQuantityButtons(min, max);
+                            updateResultsDisplay();
 
-                            if (currentQuantity > 0) {
+                            if (currentQuantityLinks > 0) {
                                 $quizItems.eq(stepIndex - 1).addClass('completed');
                             }
                         } else {
@@ -243,8 +255,8 @@
                             value = option ? option.label : value;
                         }
 
-                        if (key === 'quantity') {
-                            value = chainConfigurator.state.quantity || '';
+                        if (key === 'links_count') {
+                            value = chainConfigurator.state.links_count !== null ? chainConfigurator.state.links_count : '';
                         }
 
                         $(this).find('.creating-block__result-value').text(value || '');
@@ -268,7 +280,6 @@
                     );
 
                     if (selectedProduct) {
-
                         const isProductChanging = !chainConfigurator.selectedProduct ||
                             chainConfigurator.selectedProduct.variation_id !== selectedProduct.variation_id;
 
@@ -285,29 +296,31 @@
 
                         $('#product_id_selected').val(productID);
 
-                        const minQuantity = selectedProduct.quantityMin || 1;
-                        const maxQuantity = selectedProduct.quantityMax || 100;
+                        const minQuantityLinks = selectedProduct.countLinksMin || 1;
+                        const maxQuantityLinks = selectedProduct.countLinksMax || 100;
 
                         if (isProductChanging) {
-                            chainConfigurator.state.quantity = minQuantity;
-                            $quantityInput.val(minQuantity);
+                            chainConfigurator.state.links_count = minQuantityLinks;
+                            $quantityLinksQuantityInput.val(minQuantityLinks);
                         }
 
-                        let currentQuantity = parseInt($quantityInput.val()) || minQuantity;
-                        if (currentQuantity < minQuantity) currentQuantity = minQuantity;
-                        if (currentQuantity > maxQuantity) currentQuantity = maxQuantity;
+                        let currentQuantityLinks = parseInt($quantityLinksQuantityInput.val());
 
-                        chainConfigurator.state.quantity = currentQuantity;
+                        if (isNaN(currentQuantityLinks) || currentQuantityLinks < minQuantityLinks) currentQuantityLinks = minQuantityLinks;
+                        if (currentQuantityLinks > maxQuantityLinks) currentQuantityLinks = maxQuantityLinks;
 
-                        $('.creating-quiz__quantity-block .quantity-block__input').attr({
-                            'value': currentQuantity,
-                            'min': minQuantity,
-                            'max': maxQuantity
+                        chainConfigurator.state.links_count = currentQuantityLinks;
+
+                        $quantityLinksQuantityInput.attr({
+                            'value': currentQuantityLinks,
+                            'min': minQuantityLinks,
+                            'max': maxQuantityLinks
                         });
 
                         updateResultsDisplay();
-                        updateQuantityButtons(minQuantity, maxQuantity);
+                        updateQuantityButtons(minQuantityLinks, maxQuantityLinks);
 
+                        // AJAX-запрос
                         $.ajax({
                             url: $form.attr('action'),
                             type: 'POST',
@@ -332,7 +345,8 @@
                             }
                         });
 
-                        if (chainConfigurator.state.quantity > 0) {
+
+                        if (chainConfigurator.state.links_count > 0) {
                             $quizItems.eq(3).addClass('completed');
                         } else {
                             $quizItems.eq(3).removeClass('completed');
@@ -345,6 +359,7 @@
                         $addToCartButton.prop('disabled', true);
                         $('#product_id_selected').val('');
                         $quizItems.eq(3).removeClass('completed');
+                        resetProductDisplay();
                     }
                 }
 
@@ -361,6 +376,8 @@
 
                     $productBlock.find('.creating-block__product-price').html(`Цена за шт.: ${productData.price_html}`);
 
+                    $productQuantityBlock.show();
+
                     if (chainConfigurator.state.currentStep === 4) {
                         $addToCartButton.prop('disabled', false);
                     }
@@ -374,6 +391,7 @@
                     }
                     $('.creating-block__product-price').html('Цена за шт.:______________');
                     $addToCartButton.prop('disabled', true);
+                    $productQuantityBlock.hide();
                 }
 
                 function resetConfigurator() {
@@ -381,13 +399,15 @@
                         pitch: null,
                         thickness: null,
                         class: null,
-                        quantity: null,
+                        links_count: null,
+                        quantity: 1,
                         currentStep: 1
                     };
                     chainConfigurator.selectedProduct = null;
                     $quizItems.find('.creating-quiz__body').empty();
                     $quizItems.removeClass('completed');
-                    $quantityInput.val(1);
+                    $quantityLinksQuantityInput.val('');
+                    $productQuantityInput.val(1);
                     $('#product_id_selected').val('');
                     resetProductDisplay();
                     renderStep(1);
@@ -395,9 +415,9 @@
                 }
 
                 function updateQuantityButtons(min, max) {
-                    const currentQuantity = parseInt($quantityInput.val()) || 1;
-                    $('.quantity-block__down').prop('disabled', currentQuantity <= min);
-                    $('.quantity-block__up').prop('disabled', currentQuantity >= max);
+                    const currentQuantityLinks = parseInt($quantityLinksQuantityInput.val());
+                    $quantityLinksQuantityInput.parent().find('.quantity-block__down').prop('disabled', isNaN(currentQuantityLinks) || currentQuantityLinks <= min);
+                    $quantityLinksQuantityInput.parent().find('.quantity-block__up').prop('disabled', isNaN(currentQuantityLinks) || currentQuantityLinks >= max);
                 }
 
                 // -------------------
@@ -425,65 +445,81 @@
                     const $currentActiveStep = $(this).closest('.creating-quiz__item');
                     const currentStepIndex = $quizItems.index($currentActiveStep) + 1;
 
-                    const currentKeyIndex = currentStepIndex - 1;
+                    if (currentStepIndex > 1) {
+                        const prevStepIndex = currentStepIndex - 1;
+                        const currentKeyIndex = currentStepIndex - 1;
 
-                    if (currentStepIndex <= 3) {
+                        if (prevStepIndex <= 3) {
+                            chainConfigurator.state[stepKeys[currentKeyIndex]] = null;
+                            resetSubsequentSteps(currentKeyIndex);
+                        } else if (prevStepIndex === 3) {
+                            chainConfigurator.state.links_count = null;
+                            $quizItems.eq(3).removeClass('completed');
+                        }
 
-                        resetSubsequentSteps(currentKeyIndex);
-                    } else if (currentStepIndex === 4) {
-                        chainConfigurator.state.quantity = chainConfigurator.selectedProduct ? chainConfigurator.selectedProduct.quantityMin || 1 : 1;
-                        $quantityInput.val(chainConfigurator.state.quantity);
-                        $quizItems.eq(3).removeClass('completed');
+                        renderStep(prevStepIndex);
                         updateResultsDisplay();
-                        renderStep(4);
-                        return;
                     }
-
-                    renderStep(currentStepIndex);
-
-                    updateResultsDisplay();
                 });
 
-                $('.quantity-block').on('click', '.quantity-block__up, .quantity-block__down', function() {
-                    let currentQuantity = parseInt($quantityInput.val()) || 1;
+
+                $('#links_quantity').closest('.quantity-block').on('click', '.quantity-block__up, .quantity-block__down', function() {
+                    let currentQuantityLinks = parseInt($quantityLinksQuantityInput.val()) || 0;
                     const isPlus = $(this).hasClass('icon-plus');
 
-                    let min = $quantityInput.attr('min') ? parseInt($quantityInput.attr('min')) : 1;
-                    let max = $quantityInput.attr('max') ? parseInt($quantityInput.attr('max')) : Infinity;
+                    let min = parseInt($quantityLinksQuantityInput.attr('min')) || 1;
+                    let max = parseInt($quantityLinksQuantityInput.attr('max')) || Infinity;
 
-                    min = isNaN(min) ? 1 : min;
-                    max = isNaN(max) ? Infinity : max;
+                    if (isPlus && currentQuantityLinks < max) {
+                        currentQuantityLinks++;
+                    } else if (!isPlus && currentQuantityLinks > min) {
+                        currentQuantityLinks--;
+                    }
 
-                    if (isPlus && currentQuantity < max) {
+                    $quantityLinksQuantityInput.val(currentQuantityLinks);
+                    updateState('links_count', currentQuantityLinks);
+
+                    updateQuantityButtons(min, max);
+                });
+
+                $quantityLinksQuantityInput.on('change', function() {
+                    let currentQuantityLinks = parseInt($(this).val());
+
+                    let min = parseInt($quantityLinksQuantityInput.attr('min')) || 1;
+                    let max = parseInt($quantityLinksQuantityInput.attr('max')) || Infinity;
+
+                    if (isNaN(currentQuantityLinks) || currentQuantityLinks < 1) currentQuantityLinks = 1;
+
+                    if (currentQuantityLinks < min) currentQuantityLinks = min;
+                    if (currentQuantityLinks > max) currentQuantityLinks = max;
+
+                    $(this).val(currentQuantityLinks);
+
+                    updateState('links_count', currentQuantityLinks);
+                    updateQuantityButtons(min, max);
+                });
+
+                $productQuantityBlock.on('click', '.quantity-block__up, .quantity-block__down', function() {
+                    let currentQuantity = parseInt($productQuantityInput.val()) || 1;
+                    const isPlus = $(this).data('action') === 'plus';
+
+                    if (isPlus) {
                         currentQuantity++;
-                    } else if (!isPlus && currentQuantity > min) {
+                    } else if (currentQuantity > 1) {
                         currentQuantity--;
                     }
 
-                    $quantityInput.val(currentQuantity);
-                    updateState('quantity', currentQuantity);
-
-                    updateQuantityButtons(min, max);
+                    $productQuantityInput.val(currentQuantity);
+                    chainConfigurator.state.quantity = currentQuantity;
                 });
 
-                $quantityInput.on('change', function() {
+                $productQuantityInput.on('change', function() {
                     let currentQuantity = parseInt($(this).val());
-
-                    let min = $quantityInput.attr('min') ? parseInt($quantityInput.attr('min')) : 1;
-                    let max = $quantityInput.attr('max') ? parseInt($quantityInput.attr('max')) : Infinity;
-
-                    min = isNaN(min) ? 1 : min;
-                    max = isNaN(max) ? Infinity : max;
 
                     if (isNaN(currentQuantity) || currentQuantity < 1) currentQuantity = 1;
 
-                    if (currentQuantity < min) currentQuantity = min;
-                    if (currentQuantity > max) currentQuantity = max;
-
                     $(this).val(currentQuantity);
-
-                    updateState('quantity', currentQuantity);
-                    updateQuantityButtons(min, max);
+                    chainConfigurator.state.quantity = currentQuantity;
                 });
 
                 // -------------------
@@ -492,15 +528,11 @@
                 $addToCartButton.on('click', function(e) {
                     e.preventDefault();
                     const productID = $('#product_id_selected').val();
-                    const quantity = chainConfigurator.state.quantity;
+                    const linksCount = chainConfigurator.state.links_count;
+                    const cartQuantity = chainConfigurator.state.quantity;
 
                     if (!productID) {
                         alert('Сначала выберите все параметры продукта.');
-                        return;
-                    }
-
-                    if (chainConfigurator.state.currentStep !== 4 || quantity < 1) {
-                        alert('Сначала введите корректное количество звеньев.');
                         return;
                     }
 
@@ -512,7 +544,8 @@
                         data: {
                             action: 'woocommerce_add_to_cart',
                             product_id: productID,
-                            quantity: quantity
+                            quantity: cartQuantity,
+                            links_count: linksCount
                         },
                         success: function(response) {
                             if (response.error || !response.fragments) {
@@ -523,7 +556,7 @@
                                     $('a.header__cart').replaceWith(response.fragments['a.header__cart']);
                                 } else {
                                     const count = parseInt($('.header__cart').data('quantity')) || 0;
-                                    $('.header__cart').data('quantity', count + quantity).attr('data-quantity', count + quantity);
+                                    $('.header__cart').data('quantity', count + cartQuantity).attr('data-quantity', count + cartQuantity);
                                 }
 
                                 resetConfigurator();
@@ -538,6 +571,7 @@
                     });
                 });
 
+                resetProductDisplay();
                 renderStep(1);
                 updateResultsDisplay();
             });

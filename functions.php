@@ -442,8 +442,8 @@ function build_chain_config(array $rows): array
 				'variation_id' => $row['variation_id'] ?? null,
 				'price_html'   => $row['price_html'] ?? '',
 				'image'        => $row['image'] ?? '',
-				'quantityMin'  => $qMin,
-				'quantityMax'  => $qMax,
+				'countLinksMin'  => $qMin,
+				'countLinksMax'  => $qMax,
 			];
 		}
 	}
@@ -567,6 +567,43 @@ add_action('wp_ajax_get_cart_total_custom', 'get_cart_total_custom_ajax');
 add_action('wp_ajax_nopriv_get_cart_total_custom', 'get_cart_total_custom_ajax');
 
 
+
+add_filter('woocommerce_add_cart_item_data', 'save_chain_links_count_to_cart_item_data', 10, 2);
+function save_chain_links_count_to_cart_item_data($cart_item_data, $product_id)
+{
+
+	if (isset($_POST['links_count']) && is_numeric($_POST['links_count'])) {
+		$links_count = intval($_POST['links_count']);
+
+		$cart_item_data['links_count'] = $links_count;
+
+		$cart_item_data['unique_key'] = md5(microtime() . rand());
+	}
+	return $cart_item_data;
+}
+
+add_filter('woocommerce_get_item_data', 'display_chain_links_count_in_cart', 10, 2);
+function display_chain_links_count_in_cart($item_data, $cart_item)
+{
+
+	if (isset($cart_item['links_count'])) {
+		$item_data[] = array(
+			'key'     => 'Кол-во зв.',
+			'value'   => $cart_item['links_count'],
+			'display' => '',
+		);
+	}
+	return $item_data;
+}
+
+add_action('woocommerce_checkout_create_order_line_item', 'add_chain_links_count_to_order_items', 10, 3);
+function add_chain_links_count_to_order_items($item, $cart_item_key, $values)
+{
+
+	if (isset($values['links_count'])) {
+		$item->add_meta_data('Кол-во зв.', $values['links_count']);
+	}
+}
 
 function remove_from_cart_ajax()
 {
