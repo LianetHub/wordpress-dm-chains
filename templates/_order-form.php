@@ -1,4 +1,5 @@
 <?php
+require_once $_SERVER['DOCUMENT_ROOT'] . '/wp-config.php';
 $woocommerce_total = (WC()->cart) ? WC()->cart->get_subtotal() : 0;
 $attribute_map = [
     'pitch'     => 'Шаг',
@@ -45,11 +46,9 @@ if (WC()->cart) {
 
 <div id="order" class="popup">
     <div class="popup__form form">
+
         <?php echo do_shortcode('[contact-form-7 id="1f99d13" title="Форма заказа"]') ?>
 
-        <div id="yandex-widget-container" class="hidden">
-            <div id="delivery-widget"></div>
-        </div>
 
         <script>
             $(function() {
@@ -70,9 +69,7 @@ if (WC()->cart) {
                 const $productListInput = $('#product_list_input');
                 const $totalPriceInput = $('#total_price_input');
                 const $orderDatetimeInput = $('#order_datetime_input');
-
-                const $yandexAddressInput = $('#yandex_address_input');
-                const $yandexPriceInput = $('#yandex_price_input');
+                const $orderDeliveryAddress = $('#order_delivery_address');
 
 
                 const $formTotal = $orderContainer.find('.form__total');
@@ -157,7 +154,7 @@ if (WC()->cart) {
                         currency: 'RUB',
                         from: 'Санкт-Петербург',
                         root: 'cdek-map',
-                        apiKey: '',
+                        apiKey: "<? echo defined('CDEK_YANDEX_MAPS_API_KEY') ? CDEK_YANDEX_MAPS_API_KEY : '' ?>",
                         servicePath: '<?php echo get_template_directory_uri(); ?>/services/cdek-service.php',
                         defaultLocation: 'Москва',
                         goods: [{
@@ -169,8 +166,10 @@ if (WC()->cart) {
                         debug: true,
                         onChoose(selectedService, selectedTariff, selectedAddress) {
                             if (selectedTariff && selectedTariff.delivery_sum) {
-
-                                $('#price_delivery_input').val(selectedTariff.delivery_sum);
+                                $priceDeliveryInput.val(selectedTariff.delivery_sum);
+                            }
+                            if (selectedAddress && selectedAddress.formatted) {
+                                $orderDeliveryAddress.val(selectedAddress.formatted);
                             }
                             calculateTotal();
                         },
@@ -198,14 +197,14 @@ if (WC()->cart) {
                         params: {
                             city: "Москва",
                             size: {
-                                "height": "450px",
+                                "height": "600px",
                                 "width": "100%"
                             },
-                            source_platform_station: "GUID_ВАШЕЙ_СТАНЦИИ",
+                            source_platform_station: "<? echo defined('YANDEX_DELIVERY_PLATFORM_STATION_ID') ? YANDEX_DELIVERY_PLATFORM_STATION_ID : '' ?>",
                             physical_dims_weight_gross: 10000,
-                            delivery_price: "от 100",
-                            delivery_term: "от 1 дня",
-                            show_select_button: true,
+                            delivery_price: (price) => price + " руб",
+                            delivery_term: 3,
+                            show_select_button: false,
                             filter: {
                                 type: ["pickup_point", "terminal"],
                                 is_yandex_branded: false,
@@ -217,16 +216,28 @@ if (WC()->cart) {
                 }
 
                 document.addEventListener('YaNddWidgetPointSelected', function(data) {
-                    if (data.detail && data.detail.address && data.detail.price_estimate_max) {
-                        const fullAddress = data.detail.address.full_address;
-                        const deliveryPrice = parseFloat(data.detail.price_estimate_max) || 0;
 
-                        $priceDeliveryInput.val(deliveryPrice.toFixed(2));
-                        $yandexAddressInput.val(fullAddress);
-                        $yandexPriceInput.val(deliveryPrice.toFixed(2));
+                    const fullAddress = data.detail.address.full_address;
+                    const pointId = data.detail.id;
 
-                        calculateTotal();
+                    const priceElement = document.querySelector(`span[data-pickpoint-id="${pointId}"]`);
+
+                    if (priceElement) {
+                        setTimeout(() => {
+                            const priceText = priceElement.innerText;
+                            const priceMatch = priceText.match(/(\d+)\s*руб/);
+
+                            if (priceMatch) {
+                                const deliveryPrice = parseFloat(priceMatch[1]);
+                                $priceDeliveryInput.val(deliveryPrice.toFixed(2));
+                                calculateTotal();
+                            }
+                        }, 5000)
                     }
+
+                    $orderDeliveryAddress.val(fullAddress);
+
+                    calculateTotal();
                 });
 
 
@@ -387,6 +398,16 @@ if (WC()->cart) {
                     }
                 }
 
+                function preventWidgetSubmit() {
+                    $orderContainer.on('click', '#yandex-widget-container button, #cdek-widget-container button', function(e) {
+                        if (!$(this).attr('type')) {
+                            e.preventDefault();
+                        }
+                    });
+                }
+
+                preventWidgetSubmit();
+
 
                 updateOrderData();
 
@@ -412,7 +433,7 @@ if (WC()->cart) {
 <div id="success-popup" class="popup">
     <div class="popup__content">
         <h3 class="popup__title title">Спасибо за ваш заказ!</h3>
-        <p>Ваша заявка успешно отправлена. Мы свяжемся с вами в ближайшее время для подтверждения деталей.</p>
-        <button class="btn btn-primary" data-fancybox-close>Закрыть</button>
+        <p class="popup__subtitle">Ваша заявка успешно отправлена. Мы свяжемся с вами в ближайшее время для подтверждения деталей.</p>
+        <button class="popup__btn btn btn-primary" data-fancybox-close>Закрыть</button>
     </div>
 </div>
