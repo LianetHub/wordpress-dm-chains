@@ -286,7 +286,6 @@ wp_localize_script('your-script-handle', 'configurator_vars', array(
 	'ajaxurl' => admin_url('admin-ajax.php')
 ));
 
-
 function get_chain_combinations_data($product_id)
 {
 	if (! class_exists('WC_Product_Variable')) {
@@ -342,61 +341,51 @@ function get_chain_combinations_data($product_id)
 
 function build_chain_config(array $rows): array
 {
-	$normalizePitchValue = static function (?string $pitch): string {
-		if ($pitch === null) return '';
-		$p = trim(str_replace(['"', '”', '″', '“', ' '], '', $pitch));
-		$p = str_replace(',', '.', $p);
+
+
+	$normalizePitchValue = function ($val) {
+
+		$val = str_replace(['"', '”', '″', '“', ' '], '', $val);
+		return trim(str_replace(',', '.', $val));
+	};
+
+	$formatThicknessLabel = function ($val) {
+
+		return str_replace('.', ',', $val) . ' мм';
+	};
+
+	$formatPitchLabel = function ($val) {
+
+		$p = trim($val);
+
+		if (strpos($p, '"') === false && strpos($p, '”') === false && strpos($p, '″') === false && strpos($p, '“') === false) {
+			$p .= '”';
+		}
+
+		if (strpos($p, '/') === false) {
+			$p = str_replace('.', ',', $p);
+		}
 		return $p;
 	};
 
-	$normalizeThicknessValue = static function (?string $th): string {
-		if ($th === null) return '';
-		$t = trim($th);
-		$t = str_ireplace('мм', '', $t);
-		$t = str_replace([' ', ','], ['', '.'], $t);
-		return $t;
+	$getImagePath = function ($type, $val) {
+		$slug = str_replace(['/', '.', ','], ['-', '_', '_'], $val);
+		return "/assets/img/chains/{$type}-{$slug}.png";
 	};
 
-	$pitchLabel = static function (string $rawPitch): string {
-		return trim($rawPitch);
-	};
+	$calculateQuantityRange = function ($pitchVal) {
 
-	$thicknessLabel = static function (string $val): string {
-		$withComma = str_replace('.', ',', $val);
-		return $withComma . ' мм';
-	};
+		$pitch = 0.0;
 
-	$pitchImagePath = static function (string $pitchValue): string {
-		$slug = str_replace('/', '-', $pitchValue);
-		return "/assets/img/chains/pitch-{$slug}.png";
-	};
-
-	$thicknessImagePath = static function (string $thVal): string {
-		return "/assets/img/chains/thickness-{$thVal}.png";
-	};
-
-	$classImagePath = static function (string $classVal): string {
-		return "/assets/img/chains/class-{$classVal}.png";
-	};
-
-	$parsePitchToFloat = static function (string $pitchVal): float {
-		if ($pitchVal === '') return 0.0;
 		if (strpos($pitchVal, '/') !== false) {
-			$parts = explode('/', $pitchVal, 2);
-			$num = floatval(trim($parts[0]));
-			$den = floatval(trim($parts[1]));
-			if ($den > 0) return $num / $den;
+			$parts = explode('/', $pitchVal);
+			if (count($parts) === 2 && (float)$parts[1] !== 0.0) {
+				$pitch = (float)$parts[0] / (float)$parts[1];
+			}
+		} else {
+			$pitch = (float)$pitchVal;
 		}
-		return floatval(str_replace(',', '.', $pitchVal));
-	};
 
-	$calculateQuantityRange = static function (string $pitchVal): array {
-		$pitch = (float)(strpos($pitchVal, '/') !== false
-			? (explode('/', $pitchVal)[0] / explode('/', $pitchVal)[1])
-			: str_replace(',', '.', $pitchVal)
-		);
-
-		$pitch = (float)$pitch;
 		if ($pitch <= 0.0) return [0, 0];
 
 		$table = [
@@ -408,14 +397,13 @@ function build_chain_config(array $rows): array
 
 		$closest = null;
 		foreach ($table as $p => $ranges) {
-			if (abs($p - $pitch) < 0.01) {
+			if (abs((float)$p - $pitch) < 0.01) {
 				$closest = $ranges;
 				break;
 			}
 		}
 
 		if (!$closest) {
-
 			$lengthInches = 16;
 			$DL = ((($lengthInches * 2.54) * 2) / ($pitch * 25.4));
 			$qMin = (int)round($DL - 2);
@@ -427,121 +415,139 @@ function build_chain_config(array $rows): array
 		return [0, 0];
 	};
 
-	$pitchOnly = [];
-	$thicknessSeen = [];
-	$classSeen = [];
-	$classAvailMatrix = [];
-	$combinations = [];
-	$thicknessAvailMap = [];
+	$pitches = [];
+	$thicknesses = [];
+	$classes = [];
+	$finalCombinations = [];
 
 	foreach ($rows as $row) {
-		$rawPitch = (string)($row['pitch'] ?? '');
-		$rawThickness = (string)($row['thickness'] ?? '');
-		$rawClass = (string)($row['class'] ?? '');
 
-		$pitchVal = $normalizePitchValue($rawPitch);
-		$thVal = $normalizeThicknessValue($rawThickness);
-		$classVal = trim($rawClass);
+		$pVal = $row['pitch'] ?? '';
+		$tVal = $row['thickness'] ?? '';
+		$cVal = $row['class'] ?? '';
 
-		$hasPitch = $pitchVal !== '';
-		$hasThickness = $thVal !== '';
-		$hasClass = $classVal !== '';
+		$pitchForLabel = $pVal;
 
-		if ($hasPitch && !$hasThickness && !$hasClass) {
-			if (!isset($pitchOnly[$pitchVal])) {
-				$pitchOnly[$pitchVal] = [
-					'value' => $pitchVal,
-					'label' => $pitchLabel($rawPitch),
-					'image' => $pitchImagePath($pitchVal),
-				];
-			}
-		}
+		if (empty($pVal) || empty($tVal) || empty($cVal)) continue;
 
-		if ($hasPitch && $hasThickness && !$hasClass) {
-			if (!isset($thicknessAvailMap[$thVal])) {
-				$thicknessAvailMap[$thVal] = [];
-			}
-			$thicknessAvailMap[$thVal][$pitchVal] = true;
-		}
-
-		if ($hasPitch && $hasThickness && $hasClass) {
-			if (!isset($classAvailMatrix[$classVal])) {
-				$classAvailMatrix[$classVal] = [];
-			}
-			if (!isset($classAvailMatrix[$classVal][$pitchVal])) {
-				$classAvailMatrix[$classVal][$pitchVal] = [];
-			}
-			$classAvailMatrix[$classVal][$pitchVal][$thVal] = true;
-
-			[$qMin, $qMax] = $calculateQuantityRange($pitchVal);
-
-			$combinations[] = [
-				'pitch'        => $pitchVal,
-				'thickness'    => $thVal,
-				'class'        => $classVal,
-				'variation_id' => $row['variation_id'] ?? null,
-				'price_html'   => $row['price_html'] ?? '',
-				'image'        => $row['image'] ?? '',
-				'countLinksMin'  => $qMin,
-				'countLinksMax'  => $qMax,
+		if (!isset($pitches[$pVal])) {
+			$pitches[$pVal] = [
+				'value' => $pVal,
+				'label' => $formatPitchLabel($pitchForLabel),
+				'image' => $getImagePath('pitch', $pVal)
 			];
 		}
-	}
 
-	foreach ($thicknessAvailMap as $thVal => $pitchesSet) {
-		if (!isset($thicknessSeen[$thVal])) {
-			$thicknessSeen[$thVal] = [
-				'value' => $thVal,
-				'label' => $thicknessLabel($thVal),
-				'image' => $thicknessImagePath($thVal),
-				'availableFor' => [],
+		if (!isset($thicknesses[$tVal])) {
+			$thicknesses[$tVal] = [
+				'value' => $tVal,
+				'label' => $formatThicknessLabel($tVal),
+				'image' => $getImagePath('thickness', $tVal),
+				'available_pitches' => []
 			];
 		}
-		foreach (array_keys($pitchesSet) as $pVal) {
-			$thicknessSeen[$thVal]['availableFor'][] = ['pitch' => $pVal];
-		}
-		usort($thicknessSeen[$thVal]['availableFor'], static fn($a, $b) => strcmp($a['pitch'], $b['pitch']));
-	}
+		$thicknesses[$tVal]['available_pitches'][$pVal] = true;
 
-	foreach ($classAvailMatrix as $cls => $pitchMap) {
-		if (!isset($classSeen[$cls])) {
-			$classSeen[$cls] = [
-				'value' => $cls,
-				'label' => $cls,
-				'image' => $classImagePath($cls),
-				'availableFor' => [],
+		if (!isset($classes[$cVal])) {
+			$classes[$cVal] = [
+				'value' => $cVal,
+				'label' => $cVal,
+				'image' => $getImagePath('class', $cVal),
+				'matrix' => []
 			];
 		}
-		$entries = [];
-		foreach ($pitchMap as $pVal => $thSet) {
-			$ths = array_keys($thSet);
-			sort($ths, SORT_NATURAL);
-			$entries[] = ['pitch' => $pVal, 'thickness' => $ths];
+
+		if (!isset($classes[$cVal]['matrix'][$pVal])) {
+			$classes[$cVal]['matrix'][$pVal] = [];
 		}
-		usort($entries, static fn($a, $b) => strcmp($a['pitch'], $b['pitch']));
-		$classSeen[$cls]['availableFor'] = $entries;
+		if (!in_array($tVal, $classes[$cVal]['matrix'][$pVal], true)) {
+			$classes[$cVal]['matrix'][$pVal][] = $tVal;
+		}
+
+		$qtyRange = $calculateQuantityRange($pVal);
+
+		$finalCombinations[] = [
+			'pitch'         => $pVal,
+			'thickness'     => $tVal,
+			'class'         => $cVal,
+			'variation_id'  => $row['variation_id'] ?? null,
+			'price_html'    => $row['price_html'] ?? '',
+			'image'         => $row['image'] ?? '',
+			'countLinksMin' => $qtyRange[0],
+			'countLinksMax' => $qtyRange[1]
+		];
 	}
 
-	$pitchOptions = array_values($pitchOnly);
-	usort($pitchOptions, static fn($a, $b) => strcmp($a['value'], $b['value']));
+	$finalPitches = array_values($pitches);
+	usort($finalPitches, fn($a, $b) => strnatcmp($a['value'], $b['value']));
 
-	$thicknessOptions = array_values($thicknessSeen);
-	usort($thicknessOptions, static fn($a, $b) => ((float)$a['value']) <=> ((float)$b['value']));
+	$finalThicknesses = [];
+	foreach ($thicknesses as $t) {
+		$avail = [];
+		$pitchKeys = array_keys($t['available_pitches']);
 
+		usort($pitchKeys, fn($a, $b) => strnatcmp($a, $b));
+
+		foreach ($pitchKeys as $p) {
+			$avail[] = ['pitch' => $p];
+		}
+
+		$finalThicknesses[] = [
+			'value' => $t['value'],
+			'label' => $t['label'],
+			'image' => $t['image'],
+			'availableFor' => $avail
+		];
+	}
+
+	usort($finalThicknesses, fn($a, $b) => (float)$a['value'] <=> (float)$b['value']);
+
+
+	$finalClasses = [];
 	$classOrder = ['A' => 1, 'B' => 2, 'C' => 3];
-	$classOptions = array_values($classSeen);
-	usort($classOptions, static fn($a, $b) => ($classOrder[$a['value']] ?? 999) <=> ($classOrder[$b['value']] ?? 999));
+	foreach ($classes as $c) {
+		$avail = [];
+		$pitchKeys = array_keys($c['matrix']);
+
+		usort($pitchKeys, fn($a, $b) => strnatcmp($a, $b));
+
+		foreach ($pitchKeys as $p) {
+			$tList = $c['matrix'][$p];
+			usort($tList, fn($a, $b) => (float)$a <=> (float)$b);
+			$avail[] = [
+				'pitch' => $p,
+				'thickness' => $tList
+			];
+		}
+
+		$finalClasses[] = [
+			'value' => $c['value'],
+			'label' => $c['label'],
+			'image' => $c['image'],
+			'availableFor' => $avail
+		];
+	}
+
+	usort($finalClasses, fn($a, $b) => ($classOrder[$a['value']] ?? 999) <=> ($classOrder[$b['value']] ?? 999));
 
 	return [
 		'steps' => [
-			'pitch' => ['title' => 'pitch', 'options' => $pitchOptions],
-			'thickness' => ['title' => 'thickness', 'options' => $thicknessOptions],
-			'class' => ['title' => 'class', 'options' => $classOptions],
+			'pitch' => [
+				'title' => 'pitch',
+				'options' => $finalPitches
+			],
+			'thickness' => [
+				'title' => 'thickness',
+				'options' => $finalThicknesses
+			],
+			'class' => [
+				'title' => 'class',
+				'options' => $finalClasses
+			]
 		],
-		'combinations' => $combinations,
+		'combinations' => $finalCombinations
 	];
 }
-
 
 // =========================================================================
 // 4. AJAX HANDLERS
