@@ -14,8 +14,9 @@ jQuery(document).ready(function ($) {
         selectedProduct: null
     };
 
-    // Переменная для хранения базовой цены вариации (цены за одно звено/единицу)
+
     let baseProductPrice = null;
+    let isPriceLoading = false;
 
     const $form = $('.creating-block__content');
     const stepKeys = ['pitch', 'thickness', 'class', 'links_count'];
@@ -26,20 +27,23 @@ jQuery(document).ready(function ($) {
     const $productQuantityInput = $productQuantityBlock.find('input[name="quantity"]');
 
     function formatPrice(price) {
-        // Проверка на наличие глобальных настроек форматирования WooCommerce
         if (typeof woocommerce_admin_meta_boxes_variations !== 'undefined' && typeof woocommerce_admin_meta_boxes_variations.i18n_currency_args !== 'undefined') {
             const args = woocommerce_admin_meta_boxes_variations.i18n_currency_args;
             const priceStr = price.toFixed(args.decimal_places || 2).replace('.', args.decimal_separator || ',');
 
-            // Заменяем разделитель тысяч (если есть)
             const formattedPrice = priceStr.replace(/(\d)(?=(\d{3})+(?!\d))/g, `$1${args.thousand_separator || ' '}`);
 
             return args.currency_format.replace('%1$s', args.symbol).replace('%2$s', formattedPrice);
         }
-        return price.toFixed(2) + ' руб.'; // Заглушка
+        return price.toFixed(2) + ' руб.';
     }
 
     function updateTotalProductPrice(linksCount) {
+        if (isPriceLoading) {
+            $('.creating-block__product-price').html('Цена за шт.: Загрузка...');
+            return;
+        }
+
         if (baseProductPrice === null || isNaN(baseProductPrice)) {
             $('.creating-block__product-price').html('Цена за шт.: Нет данных');
             return;
@@ -47,7 +51,6 @@ jQuery(document).ready(function ($) {
 
         const finalLinksCount = parseInt(linksCount) || 0;
 
-        // Расчет: Цена = Базовая цена * Количество звеньев
         const totalPrice = baseProductPrice * finalLinksCount;
 
         $('.creating-block__product-price').html(`Цена за шт.: ${formatPrice(totalPrice)}`);
@@ -67,9 +70,34 @@ jQuery(document).ready(function ($) {
         }
 
         chainConfigurator.selectedProduct = null;
-        baseProductPrice = null; // Сброс базовой цены
+        baseProductPrice = null;
         resetProductDisplay();
     }
+
+    function resetToStep(stepIndex) {
+        const startIndex = stepIndex - 1;
+
+        for (let i = startIndex; i < stepKeys.length; i++) {
+            const key = stepKeys[i];
+            chainConfigurator.state[key] = null;
+
+            $quizItems.eq(i).removeClass('completed active');
+
+            if (i < 3) {
+                $quizItems.eq(i).find('.creating-quiz__body').empty();
+            }
+        }
+
+        $quantityLinksQuantityInput.val('');
+
+        chainConfigurator.selectedProduct = null;
+        baseProductPrice = null;
+        resetProductDisplay();
+
+        renderStep(stepIndex);
+        updateResultsDisplay();
+    }
+
 
     function updateState(key, value) {
         const keyIndex = stepKeys.indexOf(key);
@@ -78,20 +106,23 @@ jQuery(document).ready(function ($) {
         chainConfigurator.state[key] = value;
 
         if (keyIndex < 3 && isValueChanging) {
-            resetSubsequentSteps(keyIndex + 1);
+            for (let i = keyIndex + 1; i < stepKeys.length; i++) {
+                chainConfigurator.state[stepKeys[i]] = null;
+                $quizItems.eq(i).removeClass('completed');
+            }
         }
 
         updateResultsDisplay();
 
         if (value !== null && keyIndex < 3) {
-            $quizItems.eq(keyIndex).addClass('completed');
+            $quizItems.eq(keyIndex).addClass('completed').removeClass('active');
         } else if (key === 'links_count' && chainConfigurator.selectedProduct) {
             if (parseInt(value) > 0) {
                 $quizItems.eq(keyIndex).addClass('completed');
             } else {
                 $quizItems.eq(keyIndex).removeClass('completed');
             }
-            // Пересчитываем цену при изменении количества звеньев
+
             if (key === 'links_count' && chainConfigurator.selectedProduct) {
                 updateTotalProductPrice(parseInt(value));
             }
@@ -144,7 +175,8 @@ jQuery(document).ready(function ($) {
     function renderStep(stepIndex) {
         $quizItems.removeClass('active');
         const $currentStepEl = $quizItems.eq(stepIndex - 1);
-        $currentStepEl.addClass('active');
+
+        $currentStepEl.addClass('active').removeClass('completed');
         chainConfigurator.state.currentStep = stepIndex;
 
         $('.creating-quiz__back').prop('disabled', false);
@@ -158,13 +190,11 @@ jQuery(document).ready(function ($) {
             }
         } else if (stepIndex === 4) {
             if (chainConfigurator.selectedProduct) {
-                // Используем только min, max = Infinity
                 const min = chainConfigurator.selectedProduct.countLinksMin || 1;
                 const max = Infinity;
 
                 let currentQuantityLinks = parseInt($quantityLinksQuantityInput.val());
 
-                // Устанавливаем минимум, если нет значения
                 if (chainConfigurator.state.links_count === null || isNaN(currentQuantityLinks) || currentQuantityLinks < min) {
                     currentQuantityLinks = min;
                     chainConfigurator.state.links_count = currentQuantityLinks;
@@ -177,17 +207,14 @@ jQuery(document).ready(function ($) {
                 });
 
                 updateQuantityButtons(min, max);
-                updateResultsDisplay();
                 updateTotalProductPrice(currentQuantityLinks);
 
-                if (currentQuantityLinks > 0) {
-                    $quizItems.eq(stepIndex - 1).addClass('completed');
-                }
             } else {
                 $currentStepEl.find('.creating-quiz__body').html('<p>Сначала выберите все параметры (Шаг 1-3).</p>');
             }
         }
 
+        updateResultsDisplay();
         $addToCartButton.prop('disabled', !(chainConfigurator.selectedProduct && stepIndex === 4));
     }
 
@@ -220,7 +247,6 @@ jQuery(document).ready(function ($) {
             $imageContainer.html(`<img src="${newImageSrc}" alt="Цепь">`);
         }
 
-        // Цена рассчитывается и обновляется в updateTotalProductPrice
         updateTotalProductPrice(chainConfigurator.state.links_count);
 
         $productQuantityBlock.show();
@@ -244,7 +270,6 @@ jQuery(document).ready(function ($) {
     function updateQuantityButtons(min, max) {
         const currentQuantityLinks = parseInt($quantityLinksQuantityInput.val());
         $quantityLinksQuantityInput.parent().find('.quantity-block__down').prop('disabled', isNaN(currentQuantityLinks) || currentQuantityLinks <= min);
-        // Max = Infinity, поэтому кнопка UP не отключается
         $quantityLinksQuantityInput.parent().find('.quantity-block__up').prop('disabled', false);
     }
 
@@ -259,6 +284,7 @@ jQuery(document).ready(function ($) {
         };
         chainConfigurator.selectedProduct = null;
         baseProductPrice = null;
+        isPriceLoading = false;
         $quizItems.find('.creating-quiz__body').empty();
         $quizItems.removeClass('completed');
         $quantityLinksQuantityInput.val('');
@@ -326,7 +352,9 @@ jQuery(document).ready(function ($) {
             updateResultsDisplay();
             updateQuantityButtons(minQuantityLinks, maxQuantityLinks);
 
-            // AJAX-запрос
+            isPriceLoading = true;
+            updateTotalProductPrice(currentQuantityLinks);
+
             $.ajax({
                 url: ajaxUrl,
                 type: 'POST',
@@ -338,11 +366,10 @@ jQuery(document).ready(function ($) {
                     links_count: chainConfigurator.state.links_count
                 },
                 success: function (response) {
-
+                    isPriceLoading = false;
 
                     let parsedResponse = response;
                     try {
-
                         if (typeof response === 'string') {
                             parsedResponse = JSON.parse(response);
                         }
@@ -354,9 +381,7 @@ jQuery(document).ready(function ($) {
                     }
 
                     if (parsedResponse.success && parsedResponse.data) {
-
                         let rawPrice = parsedResponse.data.price_per_item;
-
 
                         if (typeof rawPrice === 'string') {
                             rawPrice = rawPrice.replace(',', '.');
@@ -364,21 +389,19 @@ jQuery(document).ready(function ($) {
 
                         baseProductPrice = parseFloat(rawPrice) || 0;
 
-
                         updateProductDisplay(parsedResponse.data, selectedProduct);
                     } else {
-                        console.error('Ошибка WC AJAX (Success False):', parsedResponse);
                         $('.creating-block__product-price').html('Нет в наличии');
                         $addToCartButton.prop('disabled', true);
                         $('#product_id_selected').val('');
                     }
                 },
                 error: function () {
-                    console.error('Ошибка AJAX-запроса цены (Network Error).');
+                    isPriceLoading = false;
+                    $('.creating-block__product-price').html('Ошибка сети');
                     $addToCartButton.prop('disabled', true);
                 }
             });
-
 
             if (chainConfigurator.state.links_count > 0) {
                 $quizItems.eq(3).addClass('completed');
@@ -420,26 +443,11 @@ jQuery(document).ready(function ($) {
     });
 
     $('.creating-quiz__header').on('click', '.creating-quiz__back', function () {
-        const $currentActiveStep = $(this).closest('.creating-quiz__item');
-        const currentStepIndex = $quizItems.index($currentActiveStep) + 1;
+        const $stepItem = $(this).closest('.creating-quiz__item');
+        const targetStepIndex = $quizItems.index($stepItem) + 1;
 
-        if (currentStepIndex > 1) {
-            const prevStepIndex = currentStepIndex - 1;
-            const currentKeyIndex = currentStepIndex - 1;
-
-            if (prevStepIndex <= 3) {
-                chainConfigurator.state[stepKeys[currentKeyIndex]] = null;
-                resetSubsequentSteps(currentKeyIndex);
-            } else if (prevStepIndex === 3) {
-                chainConfigurator.state.links_count = null;
-                $quizItems.eq(3).removeClass('completed');
-            }
-
-            renderStep(prevStepIndex);
-            updateResultsDisplay();
-        }
+        resetToStep(targetStepIndex);
     });
-
 
     $('#links_quantity').closest('.quantity-block').on('click', '.quantity-block__up, .quantity-block__down', function () {
         let currentQuantityLinks = parseInt($quantityLinksQuantityInput.val()) || 0;
