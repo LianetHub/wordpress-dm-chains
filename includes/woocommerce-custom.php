@@ -1,4 +1,3 @@
-
 <?php
 
 function woocommerce_support()
@@ -6,7 +5,6 @@ function woocommerce_support()
     add_theme_support('woocommerce');
 }
 add_action('after_setup_theme', 'woocommerce_support');
-
 
 add_filter('woocommerce_register_post_type_shop_order', function ($args) {
     return array_merge($args, ['public' => false, 'show_ui' => false]);
@@ -19,10 +17,7 @@ add_filter('woocommerce_register_post_type_shop_order_refund', function ($args) 
     return array_merge($args, ['public' => false, 'show_ui' => false]);
 });
 
-
 add_filter('woocommerce_payment_gateways', '__return_empty_array');
-
-
 
 add_filter('woocommerce_get_settings_pages', function ($settings) {
     if (is_array($settings)) {
@@ -35,14 +30,11 @@ add_filter('woocommerce_get_settings_pages', function ($settings) {
     return $settings;
 });
 
-
 add_action('wp_enqueue_scripts', function () {
     wp_dequeue_script('wc-checkout');
     wp_dequeue_script('wc-credit-card-form');
     wp_dequeue_script('wc-payment-method');
 }, 100);
-
-
 
 add_action('template_redirect', function () {
     if (is_shop() || is_product() || is_checkout() || is_account_page()) {
@@ -51,7 +43,6 @@ add_action('template_redirect', function () {
     }
 });
 
-
 add_action('init', function () {
     remove_rewrite_tag('%product_cat%');
     remove_rewrite_tag('%product_tag%');
@@ -59,7 +50,6 @@ add_action('init', function () {
     remove_rewrite_tag('%shop%');
     remove_rewrite_tag('%myaccount%');
 });
-
 
 add_action('wp_enqueue_scripts', function () {
     if (!is_cart()) {
@@ -72,12 +62,10 @@ add_action('wp_enqueue_scripts', function () {
     }
 }, 99);
 
-
 add_action('admin_menu', function () {
     remove_menu_page('edit.php?post_type=shop_order');
     remove_menu_page('edit.php?post_type=shop_coupon');
 });
-
 
 wp_localize_script('your-script-handle', 'configurator_vars', array(
     'ajaxurl' => admin_url('admin-ajax.php')
@@ -256,7 +244,6 @@ function build_chain_config(array $rows): array
 
     usort($finalThicknesses, fn($a, $b) => (float)$a['value'] <=> (float)$b['value']);
 
-
     $finalClasses = [];
     $classOrder = ['A' => 1, 'B' => 2, 'C' => 3];
     foreach ($classes as $c) {
@@ -303,7 +290,6 @@ function build_chain_config(array $rows): array
     ];
 }
 
-
 function add_variation_count_links_min_field($loop, $variation_data, $variation)
 {
     echo '<p class="form-row form-row-full">';
@@ -328,8 +314,6 @@ function add_variation_count_links_min_field($loop, $variation_data, $variation)
     echo '</p>';
 }
 add_action('woocommerce_variation_options_pricing', 'add_variation_count_links_min_field', 10, 3);
-
-
 
 add_action('wp_ajax_get_product_data', 'handle_get_product_data');
 add_action('wp_ajax_nopriv_get_product_data', 'handle_get_product_data');
@@ -363,11 +347,8 @@ function handle_get_product_data()
 
     wp_send_json_success($response);
 
-
     wp_die();
 }
-
-
 
 function save_variation_count_links_min_field($variation_id, $i)
 {
@@ -380,8 +361,6 @@ function save_variation_count_links_min_field($variation_id, $i)
     }
 }
 add_action('woocommerce_save_product_variation', 'save_variation_count_links_min_field', 10, 2);
-
-
 
 function get_cart_total_custom_ajax()
 {
@@ -402,8 +381,6 @@ function get_cart_total_custom_ajax()
 }
 add_action('wp_ajax_get_cart_total_custom', 'get_cart_total_custom_ajax');
 add_action('wp_ajax_nopriv_get_cart_total_custom', 'get_cart_total_custom_ajax');
-
-
 
 add_filter('woocommerce_add_cart_item_data', 'save_chain_links_count_to_cart_item_data', 10, 2);
 function save_chain_links_count_to_cart_item_data($cart_item_data, $product_id)
@@ -467,9 +444,7 @@ function remove_from_cart_ajax()
 add_action('wp_ajax_remove_from_cart', 'remove_from_cart_ajax');
 add_action('wp_ajax_nopriv_remove_from_cart', 'remove_from_cart_ajax');
 
-
-
-function update_cart_item_quantity_ajax()
+function update_cart_item_quantity_custom_ajax()
 {
     if (! class_exists('WooCommerce') || empty($_POST['hash']) || ! isset($_POST['quantity'])) {
         wp_send_json_error(['message' => 'Некорректный запрос.']);
@@ -479,6 +454,8 @@ function update_cart_item_quantity_ajax()
 
     $cart_item_key = sanitize_text_field($_POST['hash']);
     $new_quantity  = intval($_POST['quantity']);
+
+    if ($new_quantity < 1) $new_quantity = 1;
 
     $cart = WC()->cart;
     $updated = $cart->set_quantity($cart_item_key, $new_quantity, true);
@@ -492,16 +469,15 @@ function update_cart_item_quantity_ajax()
             'new_price'    => wc_price($_product->get_price()),
             'new_subtotal' => wc_price($cart_item['line_total']),
             'total'        => $cart->get_cart_total(),
-            'raw_total'    => $cart->get_total()
+            'raw_total'    => $cart->get_total(),
+            'quantity'     => $new_quantity
         ]);
     } else {
         wp_send_json_error(['message' => 'Не удалось обновить количество.']);
     }
 }
-add_action('wp_ajax_woocommerce_update_cart_item_quantity', 'update_cart_item_quantity_ajax');
-add_action('wp_ajax_nopriv_woocommerce_update_cart_item_quantity', 'update_cart_item_quantity_ajax');
-
-
+add_action('wp_ajax_woocommerce_update_cart_item_quantity', 'update_cart_item_quantity_custom_ajax');
+add_action('wp_ajax_nopriv_woocommerce_update_cart_item_quantity', 'update_cart_item_quantity_custom_ajax');
 
 function custom_clear_woocommerce_cart()
 {
@@ -514,6 +490,32 @@ function custom_clear_woocommerce_cart()
     wp_die();
 }
 
-
 add_action('wp_ajax_clear_cart_after_order', 'custom_clear_woocommerce_cart');
 add_action('wp_ajax_nopriv_clear_cart_after_order', 'custom_clear_woocommerce_cart');
+
+
+add_action('woocommerce_before_calculate_totals', 'custom_recalculate_price_by_links', 10, 1);
+function custom_recalculate_price_by_links($cart)
+{
+    if (is_admin() && !defined('DOING_AJAX')) return;
+
+    if (did_action('woocommerce_before_calculate_totals') >= 2) return;
+
+    foreach ($cart->get_cart() as $cart_item) {
+        if (isset($cart_item['links_count']) && is_numeric($cart_item['links_count'])) {
+            $links_count = intval($cart_item['links_count']);
+
+            $product = $cart_item['data'];
+
+            $base_price = $product->get_sale_price() ? $product->get_sale_price() : $product->get_regular_price();
+
+            if (!$base_price) {
+                $base_price = $product->get_price();
+            }
+
+            $new_price = (float)$base_price * $links_count;
+
+            $product->set_price($new_price);
+        }
+    }
+}

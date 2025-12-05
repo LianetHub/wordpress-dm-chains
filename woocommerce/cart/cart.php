@@ -110,15 +110,25 @@
          */
         function updateCartTotalDisplay(totalHtml) {
             $('#cart-total-price').html(totalHtml);
+
+            // Также управляем кнопкой оформления заказа
+            const $orderBtn = $('.cart__total-btn');
+            if (totalHtml && totalHtml.trim() !== '0 ₽' && totalHtml.trim() !== '0') {
+                $orderBtn.prop('disabled', false);
+            } else {
+                $orderBtn.prop('disabled', true);
+            }
         }
 
         /**
          * Обновление суммы корзины через AJAX
          */
         function getNewCartTotal() {
+            $('.cart__total').addClass('loading');
             $.ajax({
                 url: ajaxUrl,
                 type: 'POST',
+                dataType: 'json',
                 data: {
                     action: 'get_cart_total_custom'
                 },
@@ -163,7 +173,13 @@
         $('.cart__items').on('change', '.quantity-block__input', function() {
             const $input = $(this);
             const cartKey = $input.data('cart-key');
-            const newQuantity = parseInt($input.val()) || 1;
+            let newQuantity = parseInt($input.val()) || 1;
+
+            const min = parseInt($input.attr('min')) || 1;
+            if (newQuantity < min) {
+                newQuantity = min;
+                $input.val(min);
+            }
 
             const $item = $input.closest('.cart__item');
             const $total = $('.cart__total');
@@ -174,6 +190,7 @@
             $.ajax({
                 url: ajaxUrl,
                 type: 'POST',
+                dataType: 'json',
                 data: {
                     action: 'woocommerce_update_cart_item_quantity',
                     hash: cartKey,
@@ -182,12 +199,15 @@
                 },
                 success: function(response) {
                     if (response.success && response.data) {
-                        const newUnitPrice = response.data.new_price;
+                        // new_price - это цена одной цепи (вариация * звенья), newQuantity - это количество цепей
+                        const pricePerItem = response.data.new_price;
                         const totalHtml = response.data.total;
+                        const finalQuantity = response.data.quantity;
 
-                        if (newUnitPrice) {
+                        if (pricePerItem) {
+                            // Обновляем отображение цены в строке
                             $item.find('.cart__item-calc')
-                                .html(`${newUnitPrice} х <strong>${newQuantity}</strong>`);
+                                .html(`${pricePerItem} х ${finalQuantity}`);
                         }
 
                         if (totalHtml) {
@@ -221,6 +241,7 @@
             $.ajax({
                 url: ajaxUrl,
                 type: 'POST',
+                dataType: 'json',
                 data: {
                     action: 'remove_from_cart',
                     cart_item_key: cartKey,
@@ -255,7 +276,5 @@
                 }
             });
         });
-
-
     });
 </script>
