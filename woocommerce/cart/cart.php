@@ -111,7 +111,6 @@
         function updateCartTotalDisplay(totalHtml) {
             $('#cart-total-price').html(totalHtml);
 
-            // Также управляем кнопкой оформления заказа
             const $orderBtn = $('.cart__total-btn');
             if (totalHtml && totalHtml.trim() !== '0 ₽' && totalHtml.trim() !== '0') {
                 $orderBtn.prop('disabled', false);
@@ -199,13 +198,11 @@
                 },
                 success: function(response) {
                     if (response.success && response.data) {
-                        // new_price - это цена одной цепи (вариация * звенья), newQuantity - это количество цепей
                         const pricePerItem = response.data.new_price;
                         const totalHtml = response.data.total;
                         const finalQuantity = response.data.quantity;
 
                         if (pricePerItem) {
-                            // Обновляем отображение цены в строке
                             $item.find('.cart__item-calc')
                                 .html(`${pricePerItem} х ${finalQuantity}`);
                         }
