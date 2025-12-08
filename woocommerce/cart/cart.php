@@ -202,6 +202,8 @@
                         const totalHtml = response.data.total;
                         const finalQuantity = response.data.quantity;
 
+
+
                         if (pricePerItem) {
                             $item.find('.cart__item-calc')
                                 .html(`${pricePerItem} х ${finalQuantity}`);
@@ -210,6 +212,10 @@
                         if (totalHtml) {
                             updateCartTotalDisplay(totalHtml);
                         }
+
+                        $(document.body).trigger('wc_fragment_refresh');
+                        getNewOrderPopupData();
+
                     } else {
                         alert('Не удалось обновить количество товара.');
                         location.reload();
@@ -258,6 +264,8 @@
                             if ($('.cart__item').length === 0) {
                                 location.reload();
                             }
+
+                            $(document.body).trigger('wc_fragment_refresh');
                         });
                     } else {
                         alert(response.data?.message || 'Не удалось удалить товар.');
@@ -273,5 +281,7 @@
                 }
             });
         });
+
+
     });
 </script>
