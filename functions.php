@@ -289,3 +289,166 @@ function register_order_popup_script()
 	wp_enqueue_script('order-popup-script');
 }
 add_action('wp_enqueue_scripts', 'register_order_popup_script');
+
+
+add_action('phpmailer_init', 'configure_smtp_mailer');
+
+function configure_smtp_mailer($phpmailer)
+{
+	if (!defined('SMTP_HOST') || !defined('SMTP_USERNAME') || !defined('SMTP_PASSWORD')) {
+		return;
+	}
+
+	$phpmailer->isSMTP();
+	$phpmailer->Host       = SMTP_HOST;
+	$phpmailer->SMTPAuth   = true;
+	$phpmailer->Port       = 465;
+	$phpmailer->Username   = SMTP_USERNAME;
+	$phpmailer->Password   = SMTP_PASSWORD;
+	$phpmailer->SMTPSecure = 'ssl';
+	$phpmailer->From       = SMTP_USERNAME;
+	$phpmailer->FromName   = get_bloginfo('name');
+}
+
+add_action('wp_ajax_send_order_form', 'handle_send_order_form');
+add_action('wp_ajax_nopriv_send_order_form', 'handle_send_order_form');
+
+add_filter('wp_mail_from', 'custom_mail_from_email');
+add_filter('wp_mail_from_name', 'custom_mail_from_name');
+
+function custom_mail_from_email($original_email)
+{
+	return 'no-reply@dm-chains.ru';
+}
+
+function custom_mail_from_name($original_name)
+{
+	return 'Новая заявка DM-CHAINS';
+}
+
+function handle_send_order_form()
+{
+	$data = $_POST;
+
+	$delivery_map = [
+		'yandex_pickup' => 'Яндекс Доставка — Доставка до ПВЗ',
+		'cdek'          => 'СДЭК — Доставка',
+		'pickup_spb'    => 'Самовывоз (СПБ и ЛО)',
+	];
+
+	$payment_map = [
+		'individual_card'  => 'Я — физическое лицо (оплата картой)',
+		'business_invoice' => 'Я — юридическое лицо или ИП (оплата по счёту)',
+	];
+
+	$contact_map = [
+		'email'    => 'Электронная почта',
+		'telegram' => 'Telegram',
+		'whatsapp' => 'Whatsapp',
+	];
+
+	$delivery_type = $delivery_map[$data['delivery_type']] ?? $data['delivery_type'];
+	$payment_type  = $payment_map[$data['payment_type']] ?? $data['payment_type'];
+	$contact_method = $contact_map[$data['contact_method']] ?? $data['contact_method'];
+
+	$is_business = ($data['payment_type'] === 'business_invoice');
+
+	$first_name = $is_business ? $data['first_name_business'] : $data['first_name_individual'];
+	$last_name = $is_business ? $data['last_name_business'] : $data['last_name_individual'];
+	$middle_name = $is_business ? $data['middle_name_business'] : $data['middle_name_individual'];
+	$phone = $is_business ? $data['phone_business'] : $data['phone_individual'];
+
+	$subject = 'Новый заказ с сайта';
+	$headers = ['Content-Type: text/html; charset=UTF-8'];
+
+	ob_start();
+?>
+	<h3>Информация о заказе</h3>
+	<p>
+		<strong>Дата и время заявки:</strong> <?php echo esc_html($data['order_datetime']); ?><br>
+		<strong>Состав заказа:</strong> <?php echo esc_html($data['product_list']); ?>
+	</p>
+	<p>
+		<strong>Сумма товаров:</strong> <?php echo esc_html($data['price_product']); ?> ₽<br>
+		<strong>Стоимость доставки:</strong> <?php echo esc_html($data['price_delivery']); ?> ₽<br>
+		<strong>ИТОГО:</strong> <strong><?php echo esc_html($data['total_price']); ?> ₽</strong>
+	</p>
+
+	<h3>Доставка и Оплата</h3>
+	<p>
+		<strong>Тип доставки:</strong> <?php echo esc_html($delivery_type); ?><br>
+		<strong>Адрес доставки:</strong> <?php echo esc_html($data['order_delivery_address']); ?><br>
+		<strong>Тип оплаты:</strong> <?php echo esc_html($payment_type); ?>
+	</p>
+
+	<?php if ($is_business): ?>
+		<h3>Детали организации:</h3>
+		<p>
+			<strong>ИНН:</strong> <?php echo esc_html($data['inn']); ?><br>
+			<strong>Название организации:</strong> <?php echo esc_html($data['organization_name']); ?><br>
+			<strong>Юридический адрес:</strong> <?php echo esc_html($data['legal_address']); ?>
+		</p>
+	<?php endif; ?>
+
+	<h3>Контактная информация</h3>
+	<p>
+		<strong>Имя:</strong> <?php echo esc_html($first_name); ?><br>
+		<strong>Фамилия:</strong> <?php echo esc_html($last_name); ?><br>
+		<strong>Отчество:</strong> <?php echo esc_html($middle_name); ?><br>
+		<strong>Телефон:</strong> <?php echo esc_html($phone); ?> <br>
+	</p>
+
+	<p>
+		<strong>Предпочтительный способ связи:</strong> <?php echo esc_html($contact_method); ?>
+	</p>
+
+	<?php if (!empty($data['email'])): ?>
+		<p><strong>E-mail:</strong> <?php echo esc_html($data['email']); ?></p>
+	<?php endif; ?>
+
+	<?php if (!empty($data['telegram_user'])): ?>
+		<p><strong>Имя пользователя Telegram:</strong> <?php echo esc_html($data['telegram_user']); ?></p>
+	<?php endif; ?>
+
+	<?php if (!empty($data['whatsapp_phone'])): ?>
+		<p><strong>Номер для WhatsApp:</strong> <?php echo esc_html($data['whatsapp_phone']); ?></p>
+	<?php endif; ?>
+
+	<p>
+		<strong>Согласие на обработку данных:</strong> <?php echo isset($data['confirm_policies']) ? 'Да' : 'Нет'; ?>
+	</p>
+<?php
+	$message = ob_get_clean();
+
+	$recipients = [];
+	if (function_exists('get_field') && get_field('send_email', 'option')) {
+		$emails_repeater = get_field('send_email', 'option');
+		if (is_array($emails_repeater)) {
+			foreach ($emails_repeater as $row) {
+				if (!empty($row['email'])) {
+					$recipients[] = sanitize_email($row['email']);
+				}
+			}
+		}
+	}
+
+	if (empty($recipients)) {
+		$to = get_option('admin_email');
+	} else {
+		$to = $recipients;
+	}
+
+	$mail_sent = wp_mail($to, $subject, $message, $headers);
+
+	if ($mail_sent) {
+		if (class_exists('WooCommerce') && WC()->cart) {
+			WC()->cart->empty_cart();
+		}
+
+		// do_action('custom_order_form_sent', $data);
+
+		wp_send_json_success(['message' => 'Заказ успешно отправлен']);
+	} else {
+		wp_send_json_error(['message' => 'Ошибка отправки письма']);
+	}
+}

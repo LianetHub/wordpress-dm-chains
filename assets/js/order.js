@@ -47,8 +47,6 @@ jQuery(function ($) {
             if ($field.is('input:not([type="radio"]):not([type="checkbox"]), textarea, select')) {
                 $field.val('');
             }
-            $field.removeClass('wpcf7-not-valid');
-            $field.closest('.wpcf7-form-control-wrap').find('.wpcf7-not-valid-tip').remove();
         });
     }
 
@@ -65,8 +63,9 @@ jQuery(function ($) {
     }
 
     function updateOrderData() {
-        const productNames = OrderPopupData.cart_items_list;
+        if (typeof OrderPopupData === 'undefined') return;
 
+        const productNames = OrderPopupData.cart_items_list;
         const currentProductPrice = parseFloat(OrderPopupData.woocommerce_total);
 
         const now = new Date();
@@ -80,21 +79,14 @@ jQuery(function ($) {
 
         $productListInput.val(productNames);
         $orderDatetimeInput.val(dateTimeString);
-
         $priceProductInput.val(currentProductPrice.toFixed(2));
 
         calculateTotal();
     }
 
     function initCdekWidget() {
-        if (cdekWidgetInstance) {
-            return;
-        }
-
-        if (typeof window.CDEKWidget === 'undefined') {
-            console.error('Библиотека CDEKWidget не загружена.');
-            return;
-        }
+        if (cdekWidgetInstance) return;
+        if (typeof window.CDEKWidget === 'undefined') return;
 
         const widgetConfig = {
             lang: 'rus',
@@ -126,9 +118,7 @@ jQuery(function ($) {
     }
 
     function initYandexWidget() {
-        if (yandexWidgetInitialized) {
-            return;
-        }
+        if (yandexWidgetInitialized) return;
 
         if (typeof window.YaDelivery === 'undefined') {
             document.addEventListener('YaNddWidgetLoad', createYandexWidget);
@@ -162,18 +152,15 @@ jQuery(function ($) {
         });
     }
 
-    // Обработчик события выбора точки Яндекса
     document.addEventListener('YaNddWidgetPointSelected', function (data) {
         const fullAddress = data.detail.address.full_address;
         const pointId = data.detail.id;
-
         const priceElement = document.querySelector(`span[data-pickpoint-id="${pointId}"]`);
 
         if (priceElement) {
             setTimeout(() => {
                 const priceText = priceElement.innerText;
                 const priceMatch = priceText.match(/(\d+)\s*руб/);
-
                 if (priceMatch) {
                     const deliveryPrice = parseFloat(priceMatch[1]);
                     $priceDeliveryInput.val(deliveryPrice.toFixed(2));
@@ -183,7 +170,6 @@ jQuery(function ($) {
         }
 
         $orderDeliveryAddress.val(fullAddress);
-
         calculateTotal();
     });
 
@@ -197,7 +183,6 @@ jQuery(function ($) {
         $yandexWidgetContainer.addClass('hidden');
         clearFields($yandexWidgetContainer);
         disableFields($yandexWidgetContainer);
-
 
         $priceDeliveryInput.val(0);
 
@@ -293,46 +278,55 @@ jQuery(function ($) {
         $submitButton.prop('disabled', !$policyCheckbox.prop('checked'));
     }
 
-    function handleMailSent(event) {
+    function handleFormSubmit(e) {
+        e.preventDefault();
+
+        const formData = new FormData($formElement[0]);
+        formData.append('action', 'send_order_form');
+
+        $submitButton.prop('disabled', true);
+
         $.ajax({
-            type: 'POST',
             url: OrderPopupData.ajax_url,
-            data: {
-                action: 'clear_cart_after_order'
-            },
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
             success: function (response) {
                 if (response.success) {
                     $(document.body).trigger('wc_fragment_refresh');
+
+                    if (typeof Fancybox !== 'undefined') {
+                        Fancybox.close();
+                        Fancybox.show([{
+                            src: '#success-popup',
+                            type: 'inline'
+                        }]);
+                    } else {
+                        $orderContainer.hide();
+                        $successPopup.show();
+                    }
+
+                    $formElement[0].reset();
+                    $deliveryRadios.prop('checked', false);
+                    $paymentRadios.prop('checked', false);
+                    $contactRadios.prop('checked', false);
+
+                    handleDeliveryChange();
+                    handlePaymentChange();
+                    handleContactChange();
+                    updateOrderData();
+                } else {
+                    alert('Ошибка: ' + (response.data.message || 'Не удалось отправить заявку'));
                 }
             },
-            error: function (xhr, status, error) {
-                console.error('Ошибка при очистке корзины:', error);
+            error: function () {
+                alert('Произошла ошибка при отправке данных.');
+            },
+            complete: function () {
+                $submitButton.prop('disabled', false);
             }
         });
-
-        if (typeof Fancybox !== 'undefined') {
-            Fancybox.close();
-
-            Fancybox.show([{
-                src: '#success-popup',
-                type: 'inline'
-            }]);
-        } else {
-            $orderContainer.hide();
-            $successPopup.show();
-        }
-
-        $formElement[0].reset();
-        $formElement.find('.wpcf7-response-output').removeClass('wpcf7-mail-sent-ok').empty();
-
-        $deliveryRadios.prop('checked', false);
-        $paymentRadios.prop('checked', false);
-        $contactRadios.prop('checked', false);
-        handleDeliveryChange();
-        handlePaymentChange();
-        handleContactChange();
-
-        updateOrderData();
     }
 
     function handleSuccessPopupClose(e) {
@@ -352,19 +346,18 @@ jQuery(function ($) {
         });
     }
 
-    // Инициализация
     preventWidgetSubmit();
-
     updateOrderData();
 
     $deliveryRadios.on('change', handleDeliveryChange);
     $paymentRadios.on('change', handlePaymentChange);
     $contactRadios.on('change', handleContactChange);
     $policyCheckbox.on('change', handlePolicyChange);
-
     $priceDeliveryInput.on('change', calculateTotal);
 
-    $formElement.on('wpcf7mailsent', handleMailSent);
+    $formElement.on('submit', handleFormSubmit);
+
+    $('#success-popup').on('click', '.popup__btn', handleSuccessPopupClose);
 
     handleDeliveryChange();
     handlePaymentChange();
