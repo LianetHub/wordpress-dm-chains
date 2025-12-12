@@ -359,6 +359,10 @@ jQuery(function ($) {
 
     $('#success-popup').on('click', '.popup__btn', handleSuccessPopupClose);
 
+    $(document).on('refresh_order_data', function () {
+        updateOrderData();
+    });
+
     handleDeliveryChange();
     handlePaymentChange();
     handleContactChange();

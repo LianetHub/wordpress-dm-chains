@@ -378,7 +378,8 @@ class CustomWooCommerceSetup
 
             wp_send_json_success([
                 'fragments' => [],
-                'total' => WC()->cart->get_cart_total()
+                'total' => WC()->cart->get_cart_total(),
+                'cart_count' => WC()->cart->get_cart_contents_count()
             ]);
         } else {
             wp_send_json_error(['message' => 'Не удалось удалить товар.']);
@@ -415,7 +416,8 @@ class CustomWooCommerceSetup
                 'new_subtotal' => wc_price($cart_item['line_total']),
                 'total'        => $cart->get_cart_total(),
                 'raw_total'    => $cart->get_total(),
-                'quantity'     => $new_quantity
+                'quantity'     => $new_quantity,
+                'cart_count'   => $cart->get_cart_contents_count()
             ]);
         } else {
             wp_send_json_error(['message' => 'Не удалось обновить количество.']);

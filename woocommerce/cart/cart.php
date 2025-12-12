@@ -104,18 +104,48 @@
     $(function() {
         const ajaxUrl = custom_ajax_params.ajax_url;
         const cartNonce = custom_ajax_params.cart_nonce;
+        const $headerCart = $('.header__cart');
 
         /**
-         * Обновление суммы корзины
+         * Функция получения свежих данных для попапа заказа
          */
+        window.getNewOrderPopupData = function() {
+            $.ajax({
+                url: ajaxUrl,
+                type: 'POST',
+                dataType: 'json',
+                data: {
+                    action: 'get_cart_popup_data'
+                },
+                success: function(response) {
+                    if (response.success && response.data) {
+
+                        if (typeof OrderPopupData !== 'undefined') {
+                            OrderPopupData.woocommerce_total = parseFloat(response.data.woocommerce_total);
+                            OrderPopupData.cart_items_list = response.data.cart_items_list;
+                        }
+
+
+                        $(document).trigger('refresh_order_data');
+                    }
+                }
+            });
+        };
+
         function updateCartTotalDisplay(totalHtml) {
             $('#cart-total-price').html(totalHtml);
-
             const $orderBtn = $('.cart__total-btn');
             if (totalHtml && totalHtml.trim() !== '0 ₽' && totalHtml.trim() !== '0') {
                 $orderBtn.prop('disabled', false);
             } else {
                 $orderBtn.prop('disabled', true);
+            }
+        }
+
+
+        function updateHeaderCartCount(count) {
+            if (count !== undefined && $headerCart.length) {
+                $headerCart.attr('data-quantity', count);
             }
         }
 
@@ -149,7 +179,6 @@
          */
         $('.cart__items').on('click', '.quantity-block__up, .quantity-block__down', function(e) {
             e.preventDefault();
-
             const $button = $(this);
             const $input = $button.siblings('.quantity-block__input');
             let currentQuantity = parseInt($input.val()) || 1;
@@ -162,7 +191,6 @@
             } else {
                 return;
             }
-
             $input.val(currentQuantity).trigger('change');
         });
 
@@ -173,8 +201,8 @@
             const $input = $(this);
             const cartKey = $input.data('cart-key');
             let newQuantity = parseInt($input.val()) || 1;
-
             const min = parseInt($input.attr('min')) || 1;
+
             if (newQuantity < min) {
                 newQuantity = min;
                 $input.val(min);
@@ -202,18 +230,18 @@
                         const totalHtml = response.data.total;
                         const finalQuantity = response.data.quantity;
 
-
-
                         if (pricePerItem) {
-                            $item.find('.cart__item-calc')
-                                .html(`${pricePerItem} х ${finalQuantity}`);
+                            $item.find('.cart__item-calc').html(`${pricePerItem} х ${finalQuantity}`);
                         }
-
                         if (totalHtml) {
                             updateCartTotalDisplay(totalHtml);
                         }
 
+
+                        updateHeaderCartCount(response.data.cart_count);
+
                         $(document.body).trigger('wc_fragment_refresh');
+
                         getNewOrderPopupData();
 
                     } else {
@@ -233,7 +261,6 @@
          */
         $('.cart__items').on('click', '.cart__item-remove', function(e) {
             e.preventDefault();
-
             const $item = $(this).closest('.cart__item');
             const cartKey = $item.data('cart-key');
             const $total = $('.cart__total');
@@ -255,8 +282,10 @@
                         $item.fadeOut(300, function() {
                             $(this).remove();
 
-                            if (response.data && response.data.total) {
-                                updateCartTotalDisplay(response.data.total);
+                            if (response.data) {
+                                if (response.data.total) updateCartTotalDisplay(response.data.total);
+
+                                updateHeaderCartCount(response.data.cart_count);
                             } else {
                                 getNewCartTotal();
                             }
@@ -266,6 +295,8 @@
                             }
 
                             $(document.body).trigger('wc_fragment_refresh');
+
+                            getNewOrderPopupData();
                         });
                     } else {
                         alert(response.data?.message || 'Не удалось удалить товар.');
@@ -281,7 +312,5 @@
                 }
             });
         });
-
-
     });
 </script>
