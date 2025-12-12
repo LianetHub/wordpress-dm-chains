@@ -402,13 +402,14 @@
 	// .creating-block__product-image
 	&__product-image {
 		aspect-ratio: math.div(500, 667);
-		width: 100%;
 		height: 100%;
-		max-width: 80vw;
 		display: flex;
 		justify-content: center;
 		align-items: center;
-		// background: red;
+		@media (max-width: $md4) {
+			width: 100%;
+			max-width: 80vw;
+		}
 	}
 	// .creating-block__product-price
 	&__product-price {
@@ -422,6 +423,7 @@
 	&__footer {
 		display: flex;
 		flex-direction: column;
+		align-items: center;
 		gap: 2rem;
 		margin-top: rem(25);
 		@media (min-width: $md1) {
@@ -431,25 +433,12 @@
 	// .creating-block__product-add-to-cart
 	&__product-add-to-cart {
 	}
-	// .creating-block__result
-	&__result {
-		background: #f4f8f4;
-		color: #111214;
-		display: grid;
-		align-self: flex-end;
-		border: rem(3) solid #e65c10;
-		@media (min-width: $md5) {
-			grid-template-columns: repeat(2, 1fr);
-		}
+	// .creating-block__side
+	&__side {
 		@media (min-width: $md4) {
 			grid-column: span 2;
 		}
-		@media (min-width: $md3) {
-			border: rem(5) solid #e65c10;
-			grid-template-columns: repeat(4, 1fr);
-		}
 		@media (min-width: $md2) {
-			grid-template-columns: 1fr;
 			width: 20rem;
 		}
 		@media (min-width: $md1) {
@@ -457,6 +446,63 @@
 		}
 		@media (min-width: $md0) {
 			width: 25rem;
+		}
+	}
+	// .creating-block__classes
+	&__classes {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		margin-bottom: rem(34);
+	}
+	// .creating-block__classes-title
+	&__classes-title {
+		font-weight: 700;
+		font-size: rem(18);
+		width: 100%;
+		line-height: 100%;
+		text-align: center;
+		margin-bottom: rem(22);
+		@media (min-width: $md3) {
+			font-size: rem(24);
+		}
+		@media (min-width: $md1) {
+			font-size: rem(30);
+		}
+	}
+	// .creating-block__classes-item
+	&__classes-item {
+		max-width: rem(300);
+		transition: transform 0.3s ease;
+		@media (any-hover: hover) {
+			&:hover {
+				& img {
+					transform: scale(1.015);
+				}
+			}
+		}
+		&.hidden-item {
+			display: none;
+		}
+	}
+
+	// .creating-block__result
+	&__result {
+		background: #f4f8f4;
+		color: #111214;
+		display: grid;
+		align-self: flex-end;
+		border: rem(3) solid #e65c10;
+		width: 100%;
+		@media (min-width: $md5) {
+			grid-template-columns: repeat(2, 1fr);
+		}
+		@media (min-width: $md3) {
+			border: rem(5) solid #e65c10;
+			grid-template-columns: repeat(4, 1fr);
+		}
+		@media (min-width: $md2) {
+			grid-template-columns: 1fr;
 		}
 	}
 	// .creating-block__result-block

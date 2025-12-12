@@ -14,7 +14,6 @@ jQuery(document).ready(function ($) {
         selectedProduct: null
     };
 
-
     let baseProductPrice = null;
     let isPriceLoading = false;
 
@@ -25,6 +24,17 @@ jQuery(document).ready(function ($) {
     const $addToCartButton = $('.creating-block__product-add-to-cart');
     const $productQuantityBlock = $('.creating-block__quantity');
     const $productQuantityInput = $productQuantityBlock.find('input[name="quantity"]');
+    const $classesInfoBlock = $('.creating-block__classes');
+
+
+    function showClassesInfoBlock() {
+        $classesInfoBlock.removeClass('hidden');
+    }
+
+    function hideClassesInfoBlock() {
+        $classesInfoBlock.addClass('hidden');
+    }
+
 
     function formatPrice(price) {
         if (typeof woocommerce_admin_meta_boxes_variations !== 'undefined' && typeof woocommerce_admin_meta_boxes_variations.i18n_currency_args !== 'undefined') {
@@ -181,6 +191,13 @@ jQuery(document).ready(function ($) {
 
         $('.creating-quiz__back').prop('disabled', false);
 
+
+        if (stepIndex === 3) {
+            showClassesInfoBlock();
+        } else {
+            hideClassesInfoBlock();
+        }
+
         if (stepIndex <= 3) {
             const stepKey = stepKeys[stepIndex - 1];
             if (stepIndex === 1 || chainConfigurator.state[stepKeys[stepIndex - 2]]) {
@@ -265,6 +282,7 @@ jQuery(document).ready(function ($) {
         $('.creating-block__product-price').html('Цена за шт.:______________');
         $addToCartButton.prop('disabled', true);
         $productQuantityBlock.hide();
+        hideClassesInfoBlock();
     }
 
     function updateQuantityButtons(min, max) {

@@ -14,7 +14,6 @@ jQuery(document).ready(function ($) {
         selectedProduct: null
     };
 
-
     let baseProductPrice = null;
     let isPriceLoading = false;
 
@@ -25,6 +24,34 @@ jQuery(document).ready(function ($) {
     const $addToCartButton = $('.creating-block__product-add-to-cart');
     const $productQuantityBlock = $('.creating-block__quantity');
     const $productQuantityInput = $productQuantityBlock.find('input[name="quantity"]');
+    const $classesInfoBlock = $('.creating-block__classes');
+    const $classesInfoItems = $classesInfoBlock.find('.creating-block__classes-item');
+
+
+    function updateClassesInfoDisplay() {
+        const selectedClass = chainConfigurator.state.class;
+
+        if (selectedClass) {
+            $classesInfoItems.addClass('hidden-item');
+            const targetId = `#class-${selectedClass}-info`;
+            $classesInfoBlock.find(`a[href="${targetId}"]`).removeClass('hidden-item');
+        } else {
+            $classesInfoItems.addClass('hidden-item');
+        }
+    }
+
+    function showClassesInfoBlock() {
+        if (chainConfigurator.state.class) {
+            $classesInfoBlock.removeClass('hidden');
+        }
+    }
+
+    function hideClassesInfoBlock() {
+        $classesInfoBlock.addClass('hidden');
+        $classesInfoItems.addClass('hidden-item');
+    }
+
+
 
     function formatPrice(price) {
         if (typeof woocommerce_admin_meta_boxes_variations !== 'undefined' && typeof woocommerce_admin_meta_boxes_variations.i18n_currency_args !== 'undefined') {
@@ -127,6 +154,10 @@ jQuery(document).ready(function ($) {
                 updateTotalProductPrice(parseInt(value));
             }
         }
+
+        if (key === 'class' && value === null) {
+            hideClassesInfoBlock();
+        }
     }
 
     function getFilteredOptions(stepKey) {
@@ -181,6 +212,13 @@ jQuery(document).ready(function ($) {
 
         $('.creating-quiz__back').prop('disabled', false);
 
+
+        if (stepIndex === 4 && chainConfigurator.state.class) {
+            showClassesInfoBlock();
+        } else {
+            hideClassesInfoBlock();
+        }
+
         if (stepIndex <= 3) {
             const stepKey = stepKeys[stepIndex - 1];
             if (stepIndex === 1 || chainConfigurator.state[stepKeys[stepIndex - 2]]) {
@@ -190,6 +228,9 @@ jQuery(document).ready(function ($) {
             }
         } else if (stepIndex === 4) {
             if (chainConfigurator.selectedProduct) {
+
+                updateClassesInfoDisplay();
+
                 const min = chainConfigurator.selectedProduct.countLinksMin || 1;
                 const max = Infinity;
 
@@ -265,6 +306,7 @@ jQuery(document).ready(function ($) {
         $('.creating-block__product-price').html('Цена за шт.:______________');
         $addToCartButton.prop('disabled', true);
         $productQuantityBlock.hide();
+        hideClassesInfoBlock();
     }
 
     function updateQuantityButtons(min, max) {
@@ -305,6 +347,8 @@ jQuery(document).ready(function ($) {
             resetProductDisplay();
             return;
         }
+
+        updateClassesInfoDisplay();
 
         const selectedProduct = chainConfigurator.data.combinations.find(item =>
             item.pitch === state.pitch &&
@@ -555,7 +599,8 @@ jQuery(document).ready(function ($) {
         });
     });
 
-    // Инициализация
+
+
     resetProductDisplay();
     renderStep(1);
     updateResultsDisplay();

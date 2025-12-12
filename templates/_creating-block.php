@@ -61,24 +61,41 @@
                     <button type="submit" disabled class="creating-block__product-add-to-cart btn btn-primary">В корзину</button>
                 </div>
             </div>
-            <div class="creating-block__result">
-                <div class="creating-block__result-block">
-                    <div class="creating-block__result-title">Шаг:</div>
-                    <div class="creating-block__result-value"></div>
+            <div class="creating-block__side">
+                <div class="creating-block__classes hidden">
+                    <div class="creating-block__classes-title">
+                        Что такое класс цепи?
+                    </div>
+                    <a href="#class-A-info" data-fancybox-saw class="creating-block__classes-item hidden-item">
+                        <img src="<?php echo get_template_directory_uri(); ?>/assets/img/classes/class-A.png" alt="Фото класса А">
+                    </a>
+                    <a href="#class-B-info" data-fancybox-saw class="creating-block__classes-item hidden-item">
+                        <img src="<?php echo get_template_directory_uri(); ?>/assets/img/classes/class-B.png" alt="Фото класса B">
+                    </a>
+                    <a href="#class-C-info" data-fancybox-saw class="creating-block__classes-item hidden-item">
+                        <img src="<?php echo get_template_directory_uri(); ?>/assets/img/classes/class-C.png" alt="Фото класса C">
+                    </a>
                 </div>
-                <div class="creating-block__result-block">
-                    <div class="creating-block__result-title">Толщина:</div>
-                    <div class="creating-block__result-value"></div>
-                </div>
-                <div class="creating-block__result-block">
-                    <div class="creating-block__result-title">Класс:</div>
-                    <div class="creating-block__result-value"></div>
-                </div>
-                <div class="creating-block__result-block sm-block">
-                    <div class="creating-block__result-title">К-во звеньев:</div>
-                    <div class="creating-block__result-value"></div>
+                <div class="creating-block__result">
+                    <div class="creating-block__result-block">
+                        <div class="creating-block__result-title">Шаг:</div>
+                        <div class="creating-block__result-value"></div>
+                    </div>
+                    <div class="creating-block__result-block">
+                        <div class="creating-block__result-title">Толщина:</div>
+                        <div class="creating-block__result-value"></div>
+                    </div>
+                    <div class="creating-block__result-block">
+                        <div class="creating-block__result-title">Класс:</div>
+                        <div class="creating-block__result-value"></div>
+                    </div>
+                    <div class="creating-block__result-block sm-block">
+                        <div class="creating-block__result-title">К-во звеньев:</div>
+                        <div class="creating-block__result-value"></div>
+                    </div>
                 </div>
             </div>
         </form>
     </div>
 </div>
+<?php require_once(TEMPLATE_PATH . '_classes-modals.php'); ?>
