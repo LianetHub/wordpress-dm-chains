@@ -411,13 +411,27 @@ class CustomWooCommerceSetup
             $cart_item = $cart->get_cart_item($cart_item_key);
             $_product  = $cart_item['data'];
 
+            $attribute_map = [
+                'pitch'     => 'Шаг',
+                'thickness' => 'Толщина',
+                'class'     => 'Класс',
+            ];
+            $links_count_label = 'Кол-во зв.';
+            $product_quantity_label = 'Кол-во (шт)';
+
+            $cart_items_list = self::build_cart_items_list($attribute_map, $links_count_label, $product_quantity_label);
+            $cart_items_array = self::get_formatted_cart_items();
+
             wp_send_json_success([
                 'new_price'    => wc_price($_product->get_price()),
                 'new_subtotal' => wc_price($cart_item['line_total']),
                 'total'        => $cart->get_cart_total(),
                 'raw_total'    => $cart->get_total(),
                 'quantity'     => $new_quantity,
-                'cart_count'   => $cart->get_cart_contents_count()
+                'cart_count'   => $cart->get_cart_contents_count(),
+                'cart_items_list' => $cart_items_list,
+                'cart_items'      => $cart_items_array,
+                'woocommerce_total' => floatval($cart->get_cart_contents_total()),
             ]);
         } else {
             wp_send_json_error(['message' => 'Не удалось обновить количество.']);
@@ -489,6 +503,8 @@ class CustomWooCommerceSetup
 
         $cart_items_list = self::build_cart_items_list($attribute_map, $links_count_label, $product_quantity_label);
 
+        $cart_items_array = self::get_formatted_cart_items();
+
         $theme_uri = get_template_directory_uri();
         $script_handle = 'order-popup-script';
 
@@ -496,6 +512,7 @@ class CustomWooCommerceSetup
 
         $script_data = [
             'cart_items_list'   => $cart_items_list,
+            'cart_items'        => $cart_items_array,
             'woocommerce_total' => floatval($woocommerce_total),
             'ajax_url'          => admin_url('admin-ajax.php'),
             'cdek_api_key'      => defined('CDEK_YANDEX_MAPS_API_KEY') ? CDEK_YANDEX_MAPS_API_KEY : '',
@@ -505,6 +522,66 @@ class CustomWooCommerceSetup
 
         wp_localize_script($script_handle, 'OrderPopupData', $script_data);
         wp_enqueue_script($script_handle);
+    }
+
+    private static function get_formatted_cart_items(): array
+    {
+        $items = [];
+        if (WC()->cart && !WC()->cart->is_empty()) {
+
+            $attribute_map = [
+                'pitch'     => 'Шаг',
+                'thickness' => 'Толщина',
+                'class'     => 'Класс',
+            ];
+
+            foreach (WC()->cart->get_cart() as $cart_item_key => $cart_item) {
+                /** @var WC_Product $product */
+                $product = $cart_item['data'];
+
+
+                $weight = $product->get_weight() ? (float)$product->get_weight() * 1000 : 400;
+
+                $name_parts = [$product->get_name()];
+
+                if ($product->is_type('variation')) {
+                    $attributes = $cart_item['variation'];
+                    foreach ($attributes as $key => $value) {
+                        $taxonomy = str_replace('attribute_', '', $key);
+                        $attr_slug = str_replace('pa_', '', $taxonomy);
+                        $attr_label = $attribute_map[$attr_slug] ?? wc_attribute_label($taxonomy, $product);
+
+                        $name_parts[] = "{$attr_label}: " . ucwords(str_replace('-', ' ', $value));
+                    }
+                }
+
+                $links_count = $cart_item['links_count'] ?? 0;
+                if ($links_count > 0) {
+                    $name_parts[] = "Кол-во зв.: " . $links_count;
+                }
+
+                $full_name = implode(', ', $name_parts);
+
+                $line_total = $cart_item['line_total'];
+                $quantity = $cart_item['quantity'];
+
+
+                $cost_per_unit = $quantity > 0 ? (float)($line_total / $quantity) : 0;
+
+                $cost_per_unit = round($cost_per_unit, 2);
+
+                $items[] = [
+                    'name' => $full_name,
+                    'sku' => $product->get_sku(),
+                    'quantity' => $quantity,
+                    'cost_per_unit' => $cost_per_unit,
+                    'length' => $product->get_length() ?: 15,
+                    'width' => $product->get_width() ?: 10,
+                    'height' => $product->get_height() ?: 5,
+                ];
+            }
+        }
+        return $items;
     }
 
     /**

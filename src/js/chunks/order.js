@@ -106,10 +106,23 @@ jQuery(function ($) {
             onChoose(selectedService, selectedTariff, selectedAddress) {
                 if (selectedTariff && selectedTariff.delivery_sum) {
                     $priceDeliveryInput.val(selectedTariff.delivery_sum);
+                    $('#cdek_tariff_code').val(selectedTariff.tariff_code);
                 }
-                if (selectedAddress && selectedAddress.formatted) {
+
+                if (selectedAddress) {
                     $orderDeliveryAddress.val(selectedAddress.formatted);
+
+                    if (selectedAddress.city) {
+                        $('#cdek_city_code').val(selectedAddress.city);
+                    }
                 }
+
+                if (selectedService && selectedService.pvz) {
+                    $('#cdek_pvz_code').val(selectedService.pvz);
+                } else {
+                    $('#cdek_pvz_code').val('');
+                }
+
                 calculateTotal();
             },
         };
@@ -283,6 +296,17 @@ jQuery(function ($) {
 
         const formData = new FormData($formElement[0]);
         formData.append('action', 'send_order_form');
+
+
+        if (typeof OrderPopupData !== 'undefined' && OrderPopupData.cart_items) {
+
+            formData.append('cart_items', JSON.stringify(OrderPopupData.cart_items));
+        } else {
+
+            alert('Ошибка: Не удалось получить данные о товарах для отправки.');
+            $submitButton.prop('disabled', false);
+            return;
+        }
 
         $submitButton.prop('disabled', true);
 

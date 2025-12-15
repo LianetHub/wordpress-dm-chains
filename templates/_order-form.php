@@ -56,6 +56,12 @@ if (WC()->cart) {
             <input type="hidden" name="order_delivery_address" id="order_delivery_address">
             <input type="hidden" name="product_list" id="product_list_input">
 
+            <!-- cdek fields -->
+            <input type="hidden" name="cdek_tariff_code" id="cdek_tariff_code">
+            <input type="hidden" name="cdek_city_code" id="cdek_city_code">
+            <input type="hidden" name="cdek_pvz_code" id="cdek_pvz_code">
+            <!-- cdek fields -->
+
             <fieldset class="form__group">
                 <legend class="form__group-caption">
                     Выберите тип доставки
@@ -100,15 +106,15 @@ if (WC()->cart) {
                         <input class="form__control" placeholder="Введите ИНН" type="number" name="inn" disabled>
                         <input class="form__control" placeholder="Введите название организации" type="text" name="organization_name" disabled>
                         <input class="form__control" placeholder="Введите юридический адрес" type="text" name="legal_address" disabled>
-                        <input class="form__control" placeholder="Введите имя" type="text" name="first_name_business" disabled>
                         <input class="form__control" placeholder="Введите фамилию" type="text" name="last_name_business" disabled>
+                        <input class="form__control" placeholder="Введите имя" type="text" name="first_name_business" disabled>
                         <input class="form__control" placeholder="Введите отчество" type="text" name="middle_name_business" disabled>
                         <input class="form__control" placeholder="+7 (___) ___-__-__" type="tel" name="phone_business" disabled>
                     </div>
 
                     <div class="form__controls hidden" data-type="individual">
-                        <input class="form__control" placeholder="Введите имя" type="text" name="first_name_individual" disabled>
                         <input class="form__control" placeholder="Введите фамилию" type="text" name="last_name_individual" disabled>
+                        <input class="form__control" placeholder="Введите имя" type="text" name="first_name_individual" disabled>
                         <input class="form__control" placeholder="Введите отчество" type="text" name="middle_name_individual" disabled>
                         <input class="form__control" placeholder="+7 (___) ___-__-__" type="tel" name="phone_individual" disabled>
                     </div>
