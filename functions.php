@@ -6,7 +6,7 @@
 
 // Define the absolute path to the theme's templates directory
 define('TEMPLATE_PATH', dirname(__FILE__) . '/templates/');
-
+$inc_path = get_template_directory() . '/inc/';
 
 // =========================================================================
 // 2. ENQUEUE STYLES AND SCRIPTS
@@ -93,8 +93,7 @@ function add_async_attribute($tag, $handle, $src)
 add_filter('script_loader_tag', 'add_async_attribute', 10, 3);
 
 
-require_once('includes/woocommerce-custom.php');
-
+require_once $inc_path . 'woocommerce-custom.php';
 // =========================================================================
 // 3. THEME SUPPORT AND UTILITIES
 // =========================================================================
@@ -221,22 +220,30 @@ if (function_exists('acf_add_options_page')) {
 // =========================================================================
 // 4.  FORM SUBMITTING
 // =========================================================================
-add_action('phpmailer_init', 'configure_smtp_mailer');
 
+
+
+require_once $inc_path . 'Services/CdekService.php';
+require_once $inc_path . 'Services/YandexService.php';
+require_once $inc_path . 'Formatters/CdekOrderFormatter.php';
+require_once $inc_path . 'Formatters/YandexOrderFormatter.php';
+require_once $inc_path . 'DeliveryServiceFactory.php';
+require_once $inc_path . 'MailService.php';
+require_once $inc_path . 'OrderProcessor.php';
+
+
+add_action('phpmailer_init', 'configure_smtp_mailer');
 function configure_smtp_mailer($phpmailer)
 {
-	if (!isset($_ENV['SMTP_HOST']) || !isset($_ENV['SMTP_USERNAME']) || !isset($_ENV['SMTP_PASSWORD'])) {
-		return;
-	}
 
+	if (!isset($_ENV['SMTP_HOST'])) return;
 	$phpmailer->isSMTP();
-	$phpmailer->Host       = $_ENV['SMTP_HOST'];
-	$phpmailer->SMTPAuth   = true;
-	$phpmailer->Port       = 465;
-	$phpmailer->Username   = $_ENV['SMTP_USERNAME'];
-	$phpmailer->Password   = $_ENV['SMTP_PASSWORD'];
+	$phpmailer->Host = $_ENV['SMTP_HOST'];
+	$phpmailer->SMTPAuth = true;
+	$phpmailer->Port = 465;
+	$phpmailer->Username = $_ENV['SMTP_USERNAME'];
+	$phpmailer->Password = $_ENV['SMTP_PASSWORD'];
 	$phpmailer->SMTPSecure = 'ssl';
-
 	$phpmailer->SMTPOptions = [
 		'ssl' => [
 			'verify_peer' => false,
@@ -246,426 +253,43 @@ function configure_smtp_mailer($phpmailer)
 	];
 }
 
-add_filter('wp_mail_from', 'custom_mail_from_email');
-add_filter('wp_mail_from_name', 'custom_mail_from_name');
-
-function custom_mail_from_email($original_email)
-{
+add_filter('wp_mail_from', function () {
 	return $_ENV['SMTP_USERNAME'] ?? 'no-reply@dm-chains.ru';
-}
-
-function custom_mail_from_name($original_name)
-{
+});
+add_filter('wp_mail_from_name', function () {
 	return 'Новая заявка DM-CHAINS';
-}
+});
 
-class CdekApiService
-{
-	private $clientId;
-	private $clientSecret;
-	private $apiUrl = 'https://api.cdek.ru/v2';
-	private $token;
-
-	public function __construct($clientId, $clientSecret)
-	{
-		$this->clientId = $clientId;
-		$this->clientSecret = $clientSecret;
-	}
-
-	private function getAccessToken()
-	{
-		if ($this->token) return $this->token;
-
-		$url = $this->apiUrl . '/oauth/token';
-		$data = [
-			'grant_type' => 'client_credentials',
-			'client_id' => $this->clientId,
-			'client_secret' => $this->clientSecret,
-		];
-
-		$ch = curl_init();
-		curl_setopt($ch, CURLOPT_URL, $url);
-		curl_setopt($ch, CURLOPT_POST, true);
-		curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($data));
-		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-
-		$response = curl_exec($ch);
-		$result = json_decode($response, true);
-
-		if (is_resource($ch) || $ch instanceof \CurlHandle) {
-			curl_close($ch);
-		}
-
-		if (isset($result['access_token'])) {
-			$this->token = $result['access_token'];
-			return $this->token;
-		}
-
-		return null;
-	}
-
-	public function createOrder($orderData)
-	{
-		$token = $this->getAccessToken();
-
-		if (!$token) {
-			return ['requests' => [['errors' => [['message' => 'Auth failed: Could not get token']]]]];
-		}
-
-		$url = $this->apiUrl . '/orders';
-		$jsonData = json_encode($orderData);
-
-		$ch = curl_init();
-		curl_setopt($ch, CURLOPT_URL, $url);
-		curl_setopt($ch, CURLOPT_POST, true);
-		curl_setopt($ch, CURLOPT_POSTFIELDS, $jsonData);
-		curl_setopt($ch, CURLOPT_HTTPHEADER, [
-			'Authorization: Bearer ' . $token,
-			'Content-Type: application/json',
-			'Accept: application/json'
-		]);
-		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-
-		$response = curl_exec($ch);
-
-		if (is_resource($ch) || $ch instanceof \CurlHandle) {
-			curl_close($ch);
-		}
-
-		return json_decode($response, true);
-	}
-
-	public function deleteOrder($uuid)
-	{
-		$token = $this->getAccessToken();
-
-		if (!$token) {
-			return ['error' => 'Auth failed: Could not get token'];
-		}
-
-		$url = $this->apiUrl . '/orders/' . $uuid;
-
-		$ch = curl_init();
-		curl_setopt($ch, CURLOPT_URL, $url);
-		curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'DELETE');
-		curl_setopt($ch, CURLOPT_HTTPHEADER, [
-			'Authorization: Bearer ' . $token,
-			'Accept: application/json'
-		]);
-		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-
-		$response = curl_exec($ch);
-
-		if (is_resource($ch) || $ch instanceof \CurlHandle) {
-			curl_close($ch);
-		}
-
-		return json_decode($response, true);
-	}
-}
-
-class CdekOrderFormatter
-{
-	private $data;
-
-	public function __construct(array $data)
-	{
-		$this->data = $data;
-	}
-
-	public function getCartItems()
-	{
-		$cart_items = [];
-		if (!empty($this->data['cart_items'])) {
-			$cart_items = json_decode(stripslashes($this->data['cart_items']), true);
-		}
-		return is_array($cart_items) ? $cart_items : [];
-	}
-
-	private function getRecipientName(bool $isBusiness)
-	{
-		$firstName = $isBusiness ? ($this->data['first_name_business'] ?? '') : ($this->data['first_name_individual'] ?? '');
-		$lastName = $isBusiness ? ($this->data['last_name_business'] ?? '') : ($this->data['last_name_individual'] ?? '');
-		return trim($firstName . ' ' . $lastName);
-	}
-
-	private function getRecipientPhone(bool $isBusiness)
-	{
-		return $isBusiness ? ($this->data['phone_business'] ?? '') : ($this->data['phone_individual'] ?? '');
-	}
-
-	public function getOrderData()
-	{
-		$cartItems = $this->getCartItems();
-		$isBusiness = (($this->data['payment_type'] ?? '') === 'business_invoice');
-
-		$totalWeight = 0;
-		$cdekItems = [];
-		$firstItemName = 'Заказ с сайта';
-
-		if (!empty($cartItems)) {
-			$firstItemName = 'Заказ: ' . ($cartItems[0]['name'] ?? 'Товары');
-
-			foreach ($cartItems as $index => $item) {
-				$itemWeight = (int)($item['weight'] ?? 1000);
-				$itemQuantity = (int)($item['quantity'] ?? 1);
-				$itemCostPerUnit = (float)($item['cost_per_unit'] ?? 0);
-				$itemName = $item['name'] ?? 'Товар без названия';
-				$finalItemCost = round($itemCostPerUnit * $itemQuantity, 2);
-				$totalWeight += $itemWeight * $itemQuantity;
-
-				$cdekItems[] = [
-					'name' => mb_substr($itemName, 0, 150),
-					'ware_key' => $item['sku'] ?? ('goods-' . ($index + 1)),
-					'payment' => [
-						'value' => 0
-					],
-					'cost' => $finalItemCost,
-					'weight' => $itemWeight,
-					'amount' => $itemQuantity,
-				];
-			}
-		}
-
-		$packageLength = (int)($cartItems[0]['length'] ?? 20);
-		$packageWidth = (int)($cartItems[0]['width'] ?? 15);
-		$packageHeight = (int)($cartItems[0]['height'] ?? 10);
-		$finalTotalWeight = max(100, $totalWeight);
-
-		$orderData = [
-			'type' => 1,
-			'number' => uniqid('ORDER_'),
-			'tariff_code' => (int)($this->data['cdek_tariff_code'] ?? 0),
-			'comment' => 'Заказ с сайта. Состав: ' . mb_substr(($this->data['product_list'] ?? ''), 0, 200),
-			'shipment_point' => 'SPB12',
-			'recipient' => [
-				'name' => $this->getRecipientName($isBusiness),
-				'phones' => [
-					['number' => $this->getRecipientPhone($isBusiness)]
-				]
-			],
-			'packages' => [
-				[
-					'number' => '1',
-					'weight' => $finalTotalWeight,
-					'length' => $packageLength,
-					'width' => $packageWidth,
-					'height' => $packageHeight,
-					'comment' => $firstItemName,
-					'items' => $cdekItems
-				]
-			]
-		];
-
-		if (!empty($this->data['cdek_pvz_code'])) {
-			$orderData['delivery_point'] = $this->data['cdek_pvz_code'];
-		} elseif (!empty($this->data['order_delivery_address'])) {
-			$orderData['to_location'] = ['address' => $this->data['order_delivery_address']];
-		}
-
-		return $orderData;
-	}
-}
-
-class MailService
-{
-	private $data;
-	private $cdekInfo;
-
-	public function __construct(array $data, string $cdekInfo = '')
-	{
-		$this->data = $data;
-		$this->cdekInfo = $cdekInfo;
-	}
-
-	private function getMapValue(array $map, string $key)
-	{
-		$val = $this->data[$key] ?? '';
-		return $map[$val] ?? $val;
-	}
-
-	private function getRecipients()
-	{
-		$recipients = [];
-		if (function_exists('get_field')) {
-			$emails_repeater = get_field('send_email', 'option');
-			if (is_array($emails_repeater)) {
-				foreach ($emails_repeater as $row) {
-					if (!empty($row['email'])) {
-						$recipients[] = sanitize_email($row['email']);
-					}
-				}
-			}
-		}
-		return empty($recipients) ? get_option('admin_email') : implode(', ', $recipients);
-	}
-
-	public function sendOrderEmail()
-	{
-		$deliveryMap = [
-			'yandex_pickup' => 'Яндекс Доставка — Доставка до ПВЗ',
-			'cdek'          => 'СДЭК — Доставка',
-			'pickup_spb'    => 'Самовывоз (СПБ и ЛО)',
-		];
-
-		$paymentMap = [
-			'individual_card'  => 'Я — физическое лицо (оплата картой)',
-			'business_invoice' => 'Я — юридическое лицо или ИП (оплата по счёту)',
-		];
-
-		$contactMap = [
-			'email'    => 'Электронная почта',
-			'telegram' => 'Telegram',
-			'whatsapp' => 'Whatsapp',
-		];
-
-		$deliveryType = $this->getMapValue($deliveryMap, 'delivery_type');
-		$paymentType  = $this->getMapValue($paymentMap, 'payment_type');
-		$contactMethod = $this->getMapValue($contactMap, 'contact_method');
-
-		$isBusiness = (($this->data['payment_type'] ?? '') === 'business_invoice');
-		$firstName = $isBusiness ? ($this->data['first_name_business'] ?? '') : ($this->data['first_name_individual'] ?? '');
-		$lastName = $isBusiness ? ($this->data['last_name_business'] ?? '') : ($this->data['last_name_individual'] ?? '');
-		$middleName = $isBusiness ? ($this->data['middle_name_business'] ?? '') : ($this->data['middle_name_individual'] ?? '');
-		$phone = $isBusiness ? ($this->data['phone_business'] ?? '') : ($this->data['phone_individual'] ?? '');
-
-		$subject = 'Новый заказ с сайта';
-		$headers = ['Content-Type: text/html; charset=UTF-8'];
-		$to = $this->getRecipients();
-
-		ob_start();
-?>
-		<h3>Информация о заказе</h3>
-		<p>
-			<strong>Дата и время заявки:</strong> <?php echo esc_html($this->data['order_datetime'] ?? ''); ?><br>
-			<strong>Состав заказа:</strong> <?php echo esc_html($this->data['product_list'] ?? ''); ?>
-		</p>
-		<p>
-			<strong>Сумма товаров:</strong> <?php echo esc_html($this->data['price_product'] ?? ''); ?> ₽<br>
-			<strong>Стоимость доставки:</strong> <?php echo esc_html($this->data['price_delivery'] ?? ''); ?> ₽<br>
-			<strong>ИТОГО:</strong> <strong><?php echo esc_html($this->data['total_price'] ?? ''); ?> ₽</strong>
-		</p>
-
-		<h3>Доставка и Оплата</h3>
-		<p>
-			<strong>Тип доставки:</strong> <?php echo esc_html($deliveryType); ?><br>
-			<strong>Адрес доставки:</strong> <?php echo esc_html($this->data['order_delivery_address'] ?? ''); ?><br>
-			<strong>Тип оплаты:</strong> <?php echo esc_html($paymentType); ?>
-		</p>
-		<?php if ($this->cdekInfo !== ''): ?>
-			<?php echo $this->cdekInfo; ?>
-		<?php endif; ?>
-		<?php if ($isBusiness): ?>
-			<h3>Детали организации:</h3>
-			<p>
-				<strong>ИНН:</strong> <?php echo esc_html($this->data['inn'] ?? ''); ?><br>
-				<strong>Название организации:</strong> <?php echo esc_html($this->data['organization_name'] ?? ''); ?><br>
-				<strong>Юридический адрес:</strong> <?php echo esc_html($this->data['legal_address'] ?? ''); ?>
-			</p>
-		<?php endif; ?>
-
-		<h3>Контактная информация</h3>
-		<p>
-			<strong>Имя:</strong> <?php echo esc_html($firstName); ?><br>
-			<strong>Фамилия:</strong> <?php echo esc_html($lastName); ?><br>
-			<strong>Отчество:</strong> <?php echo esc_html($middleName); ?><br>
-			<strong>Телефон:</strong> <?php echo esc_html($phone); ?> <br>
-		</p>
-
-		<p>
-			<strong>Предпочтительный способ связи:</strong> <?php echo esc_html($contactMethod); ?>
-		</p>
-
-		<?php if (!empty($this->data['email'])): ?>
-			<p><strong>E-mail:</strong> <?php echo esc_html($this->data['email']); ?></p>
-		<?php endif; ?>
-
-		<?php if (!empty($this->data['telegram_user'])): ?>
-			<p><strong>Имя пользователя Telegram:</strong> <?php echo esc_html($this->data['telegram_user']); ?></p>
-		<?php endif; ?>
-
-		<?php if (!empty($this->data['whatsapp_phone'])): ?>
-			<p><strong>Номер для WhatsApp:</strong> <?php echo esc_html($this->data['whatsapp_phone']); ?></p>
-		<?php endif; ?>
-
-		<p>
-			<strong>Согласие на обработку данных:</strong> <?php echo isset($this->data['confirm_policies']) ? 'Да' : 'Нет'; ?>
-		</p>
-<?php
-		$message = ob_get_clean();
-
-		return wp_mail($to, $subject, $message, $headers);
-	}
-}
-
-class OrderProcessor
-{
-	private $data;
-	private $cdekService;
-
-	public function __construct(array $data)
-	{
-		$this->data = $data;
-		$clientId = $_ENV['CDEK_ID'] ?? '';
-		$clientSecret = $_ENV['CDEK_PASSWORD'] ?? '';
-		$this->cdekService = new CdekApiService($clientId, $clientSecret);
-	}
-
-	public function processOrder()
-	{
-		$cdekInfo = '';
-		$deliveryType = $this->data['delivery_type'] ?? '';
-		$cdekTariffCode = $this->data['cdek_tariff_code'] ?? '';
-
-		if ($deliveryType === 'cdek' && !empty($cdekTariffCode)) {
-			$formatter = new CdekOrderFormatter($this->data);
-			$cartItems = $formatter->getCartItems();
-
-			if (empty($cartItems)) {
-				$cdekInfo = '<p style="color: red;"><strong>Ошибка СДЭК: Не удалось получить товары из корзины.</strong></p>';
-			} else {
-				$cdekOrderData = $formatter->getOrderData();
-				if (!isset($cdekOrderData['delivery_point']) && !isset($cdekOrderData['to_location'])) {
-					$cdekInfo = '<p style="color: red;"><strong>Ошибка СДЭК: Не указан пункт назначения.</strong></p>';
-				} else {
-					$cdekResult = $this->cdekService->createOrder($cdekOrderData);
-					if (isset($cdekResult['entity']['uuid'])) {
-						$cdekInfo = '<p style="color: green;"><strong>Заказ СДЭК создан! UUID: ' . $cdekResult['entity']['uuid'] . '</strong></p>';
-					} else {
-						$error_details = json_encode($cdekResult, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
-						$error_msg = $cdekResult['requests'][0]['errors'][0]['message'] ?? ($cdekResult['error'] ?? 'Неизвестная ошибка');
-						$cdekInfo = '<p style="color: red;"><strong>Ошибка СДЭК: ' . esc_html($error_msg) . '</strong></p>';
-						$cdekInfo .= '<pre>' . esc_html($error_details) . '</pre>';
-					}
-				}
-			}
-		}
-
-		$mailService = new MailService($this->data, $cdekInfo);
-		$mailSent = $mailService->sendOrderEmail();
-
-		if ($mailSent) {
-			if (class_exists('WooCommerce') && WC()->cart) {
-				WC()->cart->empty_cart();
-			}
-			return ['status' => 'success', 'message' => 'Заказ успешно отправлен'];
-		}
-
-		return ['status' => 'error', 'message' => 'Ошибка отправки письма'];
-	}
-}
 
 add_action('wp_ajax_send_order_form', 'handle_send_order_form');
 add_action('wp_ajax_nopriv_send_order_form', 'handle_send_order_form');
 
 function handle_send_order_form()
 {
-	$processor = new OrderProcessor($_POST);
-	$result = $processor->processOrder();
+	try {
+		if (!isset($_POST) || empty($_POST)) {
+			wp_send_json_error(['message' => 'Данные формы не получены (POST пуст)']);
+		}
 
-	if ($result['status'] === 'success') {
-		wp_send_json_success(['message' => $result['message']]);
-	} else {
-		wp_send_json_error(['message' => $result['message']]);
+		$processor = new OrderProcessor($_POST);
+		$result = $processor->processOrder();
+
+		if ($result['status'] === 'success') {
+			wp_send_json_success(['message' => $result['message']]);
+		} else {
+			wp_send_json_error([
+				'message' => $result['message'],
+				'debug_info' => [
+					'smtp_host' => $_ENV['SMTP_HOST'] ?? 'NOT_FOUND',
+					'php_error' => error_get_last()
+				]
+			]);
+		}
+	} catch (\Exception $e) {
+		wp_send_json_error([
+			'message' => 'Критическая ошибка: ' . $e->getMessage(),
+			'file' => $e->getFile(),
+			'line' => $e->getLine()
+		]);
 	}
 }
