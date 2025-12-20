@@ -515,8 +515,8 @@ class CustomWooCommerceSetup
             'cart_items'        => $cart_items_array,
             'woocommerce_total' => floatval($woocommerce_total),
             'ajax_url'          => admin_url('admin-ajax.php'),
-            'cdek_api_key'      => defined('CDEK_YANDEX_MAPS_API_KEY') ? CDEK_YANDEX_MAPS_API_KEY : '',
-            'yandex_platform_id' => defined('YANDEX_DELIVERY_PLATFORM_STATION_ID') ? YANDEX_DELIVERY_PLATFORM_STATION_ID : '',
+            'cdek_api_key'      => $_ENV['CDEK_YANDEX_MAPS_API_KEY'] ?? '',
+            'yandex_platform_id' => $_ENV['YANDEX_DELIVERY_PLATFORM_STATION_ID'] ?? '',
             'cdek_service_path' => "{$theme_uri}/services/cdek-service.php",
         ];
 

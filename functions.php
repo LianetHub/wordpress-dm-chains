@@ -99,6 +99,21 @@ require_once('includes/woocommerce-custom.php');
 // 3. THEME SUPPORT AND UTILITIES
 // =========================================================================
 
+
+function load_env_configs($path)
+{
+	if (!file_exists($path)) return;
+
+	$lines = file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+	foreach ($lines as $line) {
+		if (strpos(trim($line), '#') === 0) continue;
+		list($name, $value) = explode('=', $line, 2);
+		$_ENV[trim($name)] = trim($value);
+	}
+}
+
+load_env_configs(ABSPATH . '.env');
+
 function allow_svg_uploads($mimes)
 {
 	$mimes['svg'] = 'image/svg+xml';
@@ -210,18 +225,18 @@ add_action('phpmailer_init', 'configure_smtp_mailer');
 
 function configure_smtp_mailer($phpmailer)
 {
-	if (!defined('SMTP_HOST') || !defined('SMTP_USERNAME') || !defined('SMTP_PASSWORD')) {
+	if (!$_ENV['SMTP_HOST'] || !$_ENV['SMTP_USERNAME'] || !$_ENV['SMTP_PASSWORD']) {
 		return;
 	}
 
 	$phpmailer->isSMTP();
-	$phpmailer->Host       = SMTP_HOST;
+	$phpmailer->Host       = $_ENV['SMTP_HOST'];
 	$phpmailer->SMTPAuth   = true;
 	$phpmailer->Port       = 465;
-	$phpmailer->Username   = SMTP_USERNAME;
-	$phpmailer->Password   = SMTP_PASSWORD;
+	$phpmailer->Username   = $_ENV['SMTP_USERNAME'];
+	$phpmailer->Password   = $_ENV['SMTP_PASSWORD'];
 	$phpmailer->SMTPSecure = 'ssl';
-	$phpmailer->From       = SMTP_USERNAME;
+	$phpmailer->From       = $_ENV['SMTP_USERNAME'];
 	$phpmailer->FromName   = get_bloginfo('name');
 }
 
@@ -591,8 +606,8 @@ class OrderProcessor
 	public function __construct(array $data)
 	{
 		$this->data = $data;
-		$clientId = defined('CDEK_ID') ? CDEK_ID : '';
-		$clientSecret =  defined('CDEK_PASSWORD') ? CDEK_PASSWORD : '';
+		$clientId = $_ENV['CDEK_ID'] ?? '';
+		$clientSecret =  $_ENV['CDEK_PASSWORD'] ?? '';
 		$this->cdekService = new CdekApiService($clientId, $clientSecret);
 	}
 

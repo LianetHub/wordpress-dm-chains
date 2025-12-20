@@ -6,13 +6,13 @@ $service = new service(
      * Вставьте свой аккаунт\идентификатор для интеграции
      * Put your account for integration here
      */
-    defined('CDEK_ID') ? CDEK_ID : '',
+    $_ENV['CDEK_ID'] ?? '',
 
     /**
      * Вставьте свой пароль для интеграции
      * Put your password for integration here
      */
-    defined('CDEK_PASSWORD') ? CDEK_PASSWORD : ''
+    $_ENV['CDEK_PASSWORD'] ?? ''
 );
 $service->process($_GET, file_get_contents('php://input'));
 
