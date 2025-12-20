@@ -355,6 +355,7 @@ jQuery(function ($) {
 
     function handleSuccessPopupClose(e) {
         e.preventDefault();
+        $submitButton.prop('disabled', true);
         if (typeof Fancybox !== 'undefined') {
             Fancybox.close();
         } else {

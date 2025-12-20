@@ -9,7 +9,7 @@ if (typeof Fancybox !== "undefined" && Fancybox !== null) {
         Carousel: {
             touch: false,
         },
-        dragToClose: false
+        dragToClose: false,
     });
 
 

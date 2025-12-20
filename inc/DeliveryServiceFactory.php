@@ -12,7 +12,7 @@ class DeliveryServiceFactory
                 );
             case 'yandex_pickup':
                 return new YandexService(
-                    $_ENV['YANDEX_TOKEN'] ?? ''
+                    $_ENV['YANDEX_DELIVERY_API_TOKEN'] ?? ''
                 );
             default:
                 return null;

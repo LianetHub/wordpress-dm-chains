@@ -266,30 +266,12 @@ add_action('wp_ajax_nopriv_send_order_form', 'handle_send_order_form');
 
 function handle_send_order_form()
 {
-	try {
-		if (!isset($_POST) || empty($_POST)) {
-			wp_send_json_error(['message' => 'Данные формы не получены (POST пуст)']);
-		}
+	$processor = new OrderProcessor($_POST);
+	$result = $processor->processOrder();
 
-		$processor = new OrderProcessor($_POST);
-		$result = $processor->processOrder();
-
-		if ($result['status'] === 'success') {
-			wp_send_json_success(['message' => $result['message']]);
-		} else {
-			wp_send_json_error([
-				'message' => $result['message'],
-				'debug_info' => [
-					'smtp_host' => $_ENV['SMTP_HOST'] ?? 'NOT_FOUND',
-					'php_error' => error_get_last()
-				]
-			]);
-		}
-	} catch (\Exception $e) {
-		wp_send_json_error([
-			'message' => 'Критическая ошибка: ' . $e->getMessage(),
-			'file' => $e->getFile(),
-			'line' => $e->getLine()
-		]);
+	if ($result['status'] === 'success') {
+		wp_send_json_success(['message' => $result['message']]);
+	} else {
+		wp_send_json_error(['message' => $result['message']]);
 	}
 }

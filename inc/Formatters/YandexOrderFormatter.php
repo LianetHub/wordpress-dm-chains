@@ -37,7 +37,7 @@ class YandexOrderFormatter
                 'comment' => 'Заказ с сайта ' . ($this->data['order_datetime'] ?? ''),
             ],
             'source' => [
-                'platform_station_id' => $_ENV['YANDEX_WAREHOUSE_ID'] ?? '',
+                'platform_station_id' => $_ENV['YANDEX_DELIVERY_PLATFORM_STATION_ID'] ?? '',
             ],
             'destination' => [
                 'type' => 'platform_station',

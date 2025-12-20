@@ -36,29 +36,31 @@ class MailService
     public function sendOrderEmail()
     {
         $deliveryMap = [
-            'yandex_pickup' => 'Яндекс Доставка — ПВЗ',
-            'cdek' => 'СДЭК — Доставка',
-            'pickup_spb' => 'Самовывоз (СПБ и ЛО)',
+            'yandex_pickup' => 'Яндекс Доставка — Доставка до ПВЗ',
+            'cdek'          => 'СДЭК — Доставка',
+            'pickup_spb'    => 'Самовывоз (СПБ и ЛО)',
         ];
 
         $paymentMap = [
-            'individual_card' => 'Физ. лицо (карта)',
-            'business_invoice' => 'Юр. лицо / ИП (счёт)',
+            'individual_card'  => 'Я — физическое лицо (оплата картой)',
+            'business_invoice' => 'Я — юридическое лицо или ИП (оплата по счёту)',
         ];
 
         $contactMap = [
-            'email' => 'E-mail',
+            'email'    => 'Электронная почта',
             'telegram' => 'Telegram',
             'whatsapp' => 'Whatsapp',
         ];
 
         $deliveryType = $this->getMapValue($deliveryMap, 'delivery_type');
-        $paymentType = $this->getMapValue($paymentMap, 'payment_type');
+        $paymentType  = $this->getMapValue($paymentMap, 'payment_type');
         $contactMethod = $this->getMapValue($contactMap, 'contact_method');
 
         $isBusiness = (($this->data['payment_type'] ?? '') === 'business_invoice');
+
         $firstName = $isBusiness ? ($this->data['first_name_business'] ?? '') : ($this->data['first_name_individual'] ?? '');
         $lastName = $isBusiness ? ($this->data['last_name_business'] ?? '') : ($this->data['last_name_individual'] ?? '');
+        $middleName = $isBusiness ? ($this->data['middle_name_business'] ?? '') : ($this->data['middle_name_individual'] ?? '');
         $phone = $isBusiness ? ($this->data['phone_business'] ?? '') : ($this->data['phone_individual'] ?? '');
 
         $subject = 'Новый заказ с сайта';
@@ -68,19 +70,65 @@ class MailService
         ob_start();
 ?>
         <h3>Информация о заказе</h3>
-        <p><strong>Дата:</strong> <?php echo esc_html($this->data['order_datetime'] ?? ''); ?></p>
-        <p><strong>Состав:</strong> <?php echo esc_html($this->data['product_list'] ?? ''); ?></p>
-        <p><strong>ИТОГО:</strong> <?php echo esc_html($this->data['total_price'] ?? ''); ?> ₽</p>
+        <p>
+            <strong>Дата и время заявки:</strong> <?php echo esc_html($this->data['order_datetime'] ?? ''); ?><br>
+            <strong>Состав заказа:</strong> <?php echo esc_html($this->data['product_list'] ?? ''); ?>
+        </p>
+        <p>
+            <strong>Сумма товаров:</strong> <?php echo esc_html($this->data['price_product'] ?? '0'); ?> ₽<br>
+            <strong>Стоимость доставки:</strong> <?php echo esc_html($this->data['price_delivery'] ?? '0'); ?> ₽<br>
+            <strong>ИТОГО:</strong> <strong><?php echo esc_html($this->data['total_price'] ?? '0'); ?> ₽</strong>
+        </p>
 
         <h3>Доставка и Оплата</h3>
-        <p><strong>Тип:</strong> <?php echo esc_html($deliveryType); ?></p>
-        <p><strong>Адрес:</strong> <?php echo esc_html($this->data['order_delivery_address'] ?? ''); ?></p>
-        <?php echo $this->deliveryInfo; ?>
+        <p>
+            <strong>Тип доставки:</strong> <?php echo esc_html($deliveryType); ?><br>
+            <?php if (!empty($this->data['order_delivery_address'])) : ?>
+                <strong>Адрес доставки:</strong> <?php echo esc_html($this->data['order_delivery_address']); ?><br>
+            <?php endif; ?>
+            <strong>Тип оплаты:</strong> <?php echo esc_html($paymentType); ?>
+        </p>
 
-        <h3>Контакты</h3>
-        <p><strong>Клиент:</strong> <?php echo esc_html($firstName . ' ' . $lastName); ?></p>
-        <p><strong>Телефон:</strong> <?php echo esc_html($phone); ?></p>
-        <p><strong>Связь:</strong> <?php echo esc_html($contactMethod); ?></p>
+        <?php if (!empty($this->deliveryInfo)): ?>
+            <?php echo $this->deliveryInfo; ?>
+        <?php endif; ?>
+
+        <?php if ($isBusiness): ?>
+            <h3>Детали организации:</h3>
+            <p>
+                <strong>ИНН:</strong> <?php echo esc_html($this->data['inn'] ?? ''); ?><br>
+                <strong>Название организации:</strong> <?php echo esc_html($this->data['organization_name'] ?? ''); ?><br>
+                <strong>Юридический адрес:</strong> <?php echo esc_html($this->data['legal_address'] ?? ''); ?>
+            </p>
+        <?php endif; ?>
+
+        <h3>Контактная информация</h3>
+        <p>
+            <strong>Имя:</strong> <?php echo esc_html($firstName); ?><br>
+            <strong>Фамилия:</strong> <?php echo esc_html($lastName); ?><br>
+            <strong>Отчество:</strong> <?php echo esc_html($middleName); ?><br>
+            <strong>Телефон:</strong> <?php echo esc_html($phone); ?> <br>
+        </p>
+
+        <p>
+            <strong>Предпочтительный способ связи:</strong> <?php echo esc_html($contactMethod); ?>
+        </p>
+
+        <?php if (!empty($this->data['email'])): ?>
+            <p><strong>E-mail:</strong> <?php echo esc_html($this->data['email']); ?></p>
+        <?php endif; ?>
+
+        <?php if (!empty($this->data['telegram_user'])): ?>
+            <p><strong>Имя пользователя Telegram:</strong> <?php echo esc_html($this->data['telegram_user']); ?></p>
+        <?php endif; ?>
+
+        <?php if (!empty($this->data['whatsapp_phone'])): ?>
+            <p><strong>Номер для WhatsApp:</strong> <?php echo esc_html($this->data['whatsapp_phone']); ?></p>
+        <?php endif; ?>
+
+        <p>
+            <strong>Согласие на обработку данных:</strong> <?php echo isset($this->data['confirm_policies']) ? 'Да' : 'Нет'; ?>
+        </p>
 <?php
         $message = ob_get_clean();
 
