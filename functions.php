@@ -225,7 +225,7 @@ add_action('phpmailer_init', 'configure_smtp_mailer');
 
 function configure_smtp_mailer($phpmailer)
 {
-	if (!$_ENV['SMTP_HOST'] || !$_ENV['SMTP_USERNAME'] || !$_ENV['SMTP_PASSWORD']) {
+	if (!isset($_ENV['SMTP_HOST']) || !isset($_ENV['SMTP_USERNAME']) || !isset($_ENV['SMTP_PASSWORD'])) {
 		return;
 	}
 
@@ -236,8 +236,14 @@ function configure_smtp_mailer($phpmailer)
 	$phpmailer->Username   = $_ENV['SMTP_USERNAME'];
 	$phpmailer->Password   = $_ENV['SMTP_PASSWORD'];
 	$phpmailer->SMTPSecure = 'ssl';
-	$phpmailer->From       = $_ENV['SMTP_USERNAME'];
-	$phpmailer->FromName   = get_bloginfo('name');
+
+	$phpmailer->SMTPOptions = [
+		'ssl' => [
+			'verify_peer' => false,
+			'verify_peer_name' => false,
+			'allow_self_signed' => true
+		]
+	];
 }
 
 add_filter('wp_mail_from', 'custom_mail_from_email');
@@ -245,7 +251,7 @@ add_filter('wp_mail_from_name', 'custom_mail_from_name');
 
 function custom_mail_from_email($original_email)
 {
-	return 'no-reply@dm-chains.ru';
+	return $_ENV['SMTP_USERNAME'] ?? 'no-reply@dm-chains.ru';
 }
 
 function custom_mail_from_name($original_name)
@@ -270,7 +276,7 @@ class CdekApiService
 	{
 		if ($this->token) return $this->token;
 
-		$url = $this->apiUrl . '/oauth/token?parameters';
+		$url = $this->apiUrl . '/oauth/token';
 		$data = [
 			'grant_type' => 'client_credentials',
 			'client_id' => $this->clientId,
@@ -378,20 +384,20 @@ class CdekOrderFormatter
 
 	private function getRecipientName(bool $isBusiness)
 	{
-		$firstName = $isBusiness ? $this->data['first_name_business'] : $this->data['first_name_individual'];
-		$lastName = $isBusiness ? $this->data['last_name_business'] : $this->data['last_name_individual'];
+		$firstName = $isBusiness ? ($this->data['first_name_business'] ?? '') : ($this->data['first_name_individual'] ?? '');
+		$lastName = $isBusiness ? ($this->data['last_name_business'] ?? '') : ($this->data['last_name_individual'] ?? '');
 		return trim($firstName . ' ' . $lastName);
 	}
 
 	private function getRecipientPhone(bool $isBusiness)
 	{
-		return $isBusiness ? $this->data['phone_business'] : $this->data['phone_individual'];
+		return $isBusiness ? ($this->data['phone_business'] ?? '') : ($this->data['phone_individual'] ?? '');
 	}
 
 	public function getOrderData()
 	{
 		$cartItems = $this->getCartItems();
-		$isBusiness = ($this->data['payment_type'] === 'business_invoice');
+		$isBusiness = (($this->data['payment_type'] ?? '') === 'business_invoice');
 
 		$totalWeight = 0;
 		$cdekItems = [];
@@ -401,14 +407,11 @@ class CdekOrderFormatter
 			$firstItemName = 'Заказ: ' . ($cartItems[0]['name'] ?? 'Товары');
 
 			foreach ($cartItems as $index => $item) {
-
 				$itemWeight = (int)($item['weight'] ?? 1000);
 				$itemQuantity = (int)($item['quantity'] ?? 1);
 				$itemCostPerUnit = (float)($item['cost_per_unit'] ?? 0);
 				$itemName = $item['name'] ?? 'Товар без названия';
-
 				$finalItemCost = round($itemCostPerUnit * $itemQuantity, 2);
-
 				$totalWeight += $itemWeight * $itemQuantity;
 
 				$cdekItems[] = [
@@ -427,14 +430,13 @@ class CdekOrderFormatter
 		$packageLength = (int)($cartItems[0]['length'] ?? 20);
 		$packageWidth = (int)($cartItems[0]['width'] ?? 15);
 		$packageHeight = (int)($cartItems[0]['height'] ?? 10);
-
 		$finalTotalWeight = max(100, $totalWeight);
 
 		$orderData = [
 			'type' => 1,
 			'number' => uniqid('ORDER_'),
 			'tariff_code' => (int)($this->data['cdek_tariff_code'] ?? 0),
-			'comment' => 'Заказ с сайта. Состав: ' . mb_substr($this->data['product_list'], 0, 200),
+			'comment' => 'Заказ с сайта. Состав: ' . mb_substr(($this->data['product_list'] ?? ''), 0, 200),
 			'shipment_point' => 'SPB12',
 			'recipient' => [
 				'name' => $this->getRecipientName($isBusiness),
@@ -455,12 +457,9 @@ class CdekOrderFormatter
 			]
 		];
 
-		$hasPvzCode = !empty($this->data['cdek_pvz_code']);
-		$hasDeliveryAddress = !empty($this->data['order_delivery_address']);
-
-		if ($hasPvzCode) {
+		if (!empty($this->data['cdek_pvz_code'])) {
 			$orderData['delivery_point'] = $this->data['cdek_pvz_code'];
-		} elseif ($hasDeliveryAddress) {
+		} elseif (!empty($this->data['order_delivery_address'])) {
 			$orderData['to_location'] = ['address' => $this->data['order_delivery_address']];
 		}
 
@@ -481,13 +480,14 @@ class MailService
 
 	private function getMapValue(array $map, string $key)
 	{
-		return $map[$this->data[$key]] ?? $this->data[$key];
+		$val = $this->data[$key] ?? '';
+		return $map[$val] ?? $val;
 	}
 
 	private function getRecipients()
 	{
 		$recipients = [];
-		if (function_exists('get_field') && get_field('send_email', 'option')) {
+		if (function_exists('get_field')) {
 			$emails_repeater = get_field('send_email', 'option');
 			if (is_array($emails_repeater)) {
 				foreach ($emails_repeater as $row) {
@@ -497,7 +497,7 @@ class MailService
 				}
 			}
 		}
-		return empty($recipients) ? get_option('admin_email') : $recipients;
+		return empty($recipients) ? get_option('admin_email') : implode(', ', $recipients);
 	}
 
 	public function sendOrderEmail()
@@ -523,11 +523,11 @@ class MailService
 		$paymentType  = $this->getMapValue($paymentMap, 'payment_type');
 		$contactMethod = $this->getMapValue($contactMap, 'contact_method');
 
-		$isBusiness = ($this->data['payment_type'] === 'business_invoice');
-		$firstName = $isBusiness ? $this->data['first_name_business'] : $this->data['first_name_individual'];
-		$lastName = $isBusiness ? $this->data['last_name_business'] : $this->data['last_name_individual'];
-		$middleName = $isBusiness ? $this->data['middle_name_business'] : $this->data['middle_name_individual'];
-		$phone = $isBusiness ? $this->data['phone_business'] : $this->data['phone_individual'];
+		$isBusiness = (($this->data['payment_type'] ?? '') === 'business_invoice');
+		$firstName = $isBusiness ? ($this->data['first_name_business'] ?? '') : ($this->data['first_name_individual'] ?? '');
+		$lastName = $isBusiness ? ($this->data['last_name_business'] ?? '') : ($this->data['last_name_individual'] ?? '');
+		$middleName = $isBusiness ? ($this->data['middle_name_business'] ?? '') : ($this->data['middle_name_individual'] ?? '');
+		$phone = $isBusiness ? ($this->data['phone_business'] ?? '') : ($this->data['phone_individual'] ?? '');
 
 		$subject = 'Новый заказ с сайта';
 		$headers = ['Content-Type: text/html; charset=UTF-8'];
@@ -537,30 +537,30 @@ class MailService
 ?>
 		<h3>Информация о заказе</h3>
 		<p>
-			<strong>Дата и время заявки:</strong> <?php echo esc_html($this->data['order_datetime']); ?><br>
-			<strong>Состав заказа:</strong> <?php echo esc_html($this->data['product_list']); ?>
+			<strong>Дата и время заявки:</strong> <?php echo esc_html($this->data['order_datetime'] ?? ''); ?><br>
+			<strong>Состав заказа:</strong> <?php echo esc_html($this->data['product_list'] ?? ''); ?>
 		</p>
 		<p>
-			<strong>Сумма товаров:</strong> <?php echo esc_html($this->data['price_product']); ?> ₽<br>
-			<strong>Стоимость доставки:</strong> <?php echo esc_html($this->data['price_delivery']); ?> ₽<br>
-			<strong>ИТОГО:</strong> <strong><?php echo esc_html($this->data['total_price']); ?> ₽</strong>
+			<strong>Сумма товаров:</strong> <?php echo esc_html($this->data['price_product'] ?? ''); ?> ₽<br>
+			<strong>Стоимость доставки:</strong> <?php echo esc_html($this->data['price_delivery'] ?? ''); ?> ₽<br>
+			<strong>ИТОГО:</strong> <strong><?php echo esc_html($this->data['total_price'] ?? ''); ?> ₽</strong>
 		</p>
 
 		<h3>Доставка и Оплата</h3>
 		<p>
 			<strong>Тип доставки:</strong> <?php echo esc_html($deliveryType); ?><br>
-			<strong>Адрес доставки:</strong> <?php echo esc_html($this->data['order_delivery_address']); ?><br>
+			<strong>Адрес доставки:</strong> <?php echo esc_html($this->data['order_delivery_address'] ?? ''); ?><br>
 			<strong>Тип оплаты:</strong> <?php echo esc_html($paymentType); ?>
 		</p>
-		<? if ($this->cdekInfo !== ''): ?>
+		<?php if ($this->cdekInfo !== ''): ?>
 			<?php echo $this->cdekInfo; ?>
 		<?php endif; ?>
 		<?php if ($isBusiness): ?>
 			<h3>Детали организации:</h3>
 			<p>
-				<strong>ИНН:</strong> <?php echo esc_html($this->data['inn']); ?><br>
-				<strong>Название организации:</strong> <?php echo esc_html($this->data['organization_name']); ?><br>
-				<strong>Юридический адрес:</strong> <?php echo esc_html($this->data['legal_address']); ?>
+				<strong>ИНН:</strong> <?php echo esc_html($this->data['inn'] ?? ''); ?><br>
+				<strong>Название организации:</strong> <?php echo esc_html($this->data['organization_name'] ?? ''); ?><br>
+				<strong>Юридический адрес:</strong> <?php echo esc_html($this->data['legal_address'] ?? ''); ?>
 			</p>
 		<?php endif; ?>
 
@@ -607,51 +607,34 @@ class OrderProcessor
 	{
 		$this->data = $data;
 		$clientId = $_ENV['CDEK_ID'] ?? '';
-		$clientSecret =  $_ENV['CDEK_PASSWORD'] ?? '';
+		$clientSecret = $_ENV['CDEK_PASSWORD'] ?? '';
 		$this->cdekService = new CdekApiService($clientId, $clientSecret);
 	}
 
 	public function processOrder()
 	{
 		$cdekInfo = '';
-		$mailSent = false;
-
 		$deliveryType = $this->data['delivery_type'] ?? '';
 		$cdekTariffCode = $this->data['cdek_tariff_code'] ?? '';
 
 		if ($deliveryType === 'cdek' && !empty($cdekTariffCode)) {
-
 			$formatter = new CdekOrderFormatter($this->data);
+			$cartItems = $formatter->getCartItems();
 
-			if (empty($formatter->getCartItems())) {
-				$cdekInfo = '<p style="color: red;"><strong>Ошибка СДЭК: Не удалось получить/декодировать товары из корзины. Массив [packages[0].items] пуст.</strong></p>';
+			if (empty($cartItems)) {
+				$cdekInfo = '<p style="color: red;"><strong>Ошибка СДЭК: Не удалось получить товары из корзины.</strong></p>';
 			} else {
 				$cdekOrderData = $formatter->getOrderData();
-
 				if (!isset($cdekOrderData['delivery_point']) && !isset($cdekOrderData['to_location'])) {
 					$cdekInfo = '<p style="color: red;"><strong>Ошибка СДЭК: Не указан пункт назначения.</strong></p>';
 				} else {
-					error_log('CDEK REQUEST DATA: ' . print_r($cdekOrderData, true));
 					$cdekResult = $this->cdekService->createOrder($cdekOrderData);
-					error_log('CDEK RESPONSE: ' . print_r($cdekResult, true));
-
 					if (isset($cdekResult['entity']['uuid'])) {
 						$cdekInfo = '<p style="color: green;"><strong>Заказ СДЭК создан! UUID: ' . $cdekResult['entity']['uuid'] . '</strong></p>';
 					} else {
 						$error_details = json_encode($cdekResult, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
-
-						$error_msg = 'Неизвестная ошибка';
-						if (isset($cdekResult['requests'][0]['errors'][0]['message'])) {
-							$error_msg = $cdekResult['requests'][0]['errors'][0]['message'];
-							if (isset($cdekResult['requests'][0]['errors'][0]['code'])) {
-								$error_msg .= ' (' . $cdekResult['requests'][0]['errors'][0]['code'] . ')';
-							}
-						} elseif (isset($cdekResult['error'])) {
-							$error_msg = $cdekResult['error'];
-						}
-
-						$cdekInfo = '<p style="color: red;"><strong>Ошибка СДЭК: ' . $error_msg . '</strong></p>';
-						$cdekInfo .= '<h4>Полный ответ API СДЭК для отладки:</h4>';
+						$error_msg = $cdekResult['requests'][0]['errors'][0]['message'] ?? ($cdekResult['error'] ?? 'Неизвестная ошибка');
+						$cdekInfo = '<p style="color: red;"><strong>Ошибка СДЭК: ' . esc_html($error_msg) . '</strong></p>';
 						$cdekInfo .= '<pre>' . esc_html($error_details) . '</pre>';
 					}
 				}
@@ -666,9 +649,9 @@ class OrderProcessor
 				WC()->cart->empty_cart();
 			}
 			return ['status' => 'success', 'message' => 'Заказ успешно отправлен'];
-		} else {
-			return ['status' => 'error', 'message' => 'Ошибка отправки письма'];
 		}
+
+		return ['status' => 'error', 'message' => 'Ошибка отправки письма'];
 	}
 }
 
