@@ -44,7 +44,7 @@ class OrderProcessor
         $result = $service->createOrder($formatter->getOrderData());
 
         if (isset($result['entity']['uuid'])) {
-            return '<p style="color:green;">СДЭК создан: ' . $result['entity']['uuid'] . '</p>';
+            return '<p style="color:green;">СДЭК создан: ' . esc_html($result['entity']['uuid']) . '</p>';
         }
 
         $error = $result['requests'][0]['errors'][0]['message'] ?? 'Ошибка СДЭК';
@@ -59,10 +59,15 @@ class OrderProcessor
         $result = $service->createOrder($formatter->getOrderData());
 
         if (isset($result['id'])) {
-            return '<p style="color:green;">Яндекс создан: ' . $result['id'] . '</p>';
+            $status = $result['status'] ?? 'создана';
+            return '<p style="color:green;">Яндекс Доставка: заявка ' . esc_html($result['id']) . ' (' . esc_html($status) . ')</p>';
         }
 
         $error = $result['message'] ?? 'Ошибка Яндекса';
-        return '<p style="color:red;">Яндекс Ошибка: ' . esc_html($error) . '</p>';
+        $errorCode = $result['code'] ?? '';
+
+        $fullError = $errorCode ? "[$errorCode] $error" : $error;
+
+        return '<p style="color:red;">Яндекс Ошибка: ' . esc_html($fullError) . '</p>';
     }
 }
