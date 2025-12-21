@@ -325,7 +325,13 @@ jQuery(function ($) {
                         Fancybox.show([{
                             src: '#success-popup',
                             type: 'inline'
-                        }]);
+                        }], {
+                            on: {
+                                destroy: function () {
+                                    window.location.reload();
+                                }
+                            }
+                        });
                     } else {
                         $orderContainer.hide();
                         $successPopup.show();
