@@ -88,6 +88,20 @@ jQuery(function ($) {
         if (cdekWidgetInstance) return;
         if (typeof window.CDEKWidget === 'undefined') return;
 
+        const cartItems = OrderPopupData.cart_items || [];
+        let goods = [];
+
+        cartItems.forEach(item => {
+            for (let i = 0; i < item.quantity; i++) {
+                goods.push({
+                    weight: item.weight,
+                    length: item.length,
+                    width: item.width,
+                    height: item.height
+                });
+            }
+        });
+
         const widgetConfig = {
             lang: 'rus',
             currency: 'RUB',
@@ -96,12 +110,7 @@ jQuery(function ($) {
             apiKey: OrderPopupData.cdek_api_key,
             servicePath: OrderPopupData.cdek_service_path,
             defaultLocation: 'Москва',
-            goods: [{
-                weight: 1000,
-                length: 10,
-                width: 10,
-                height: 10
-            }],
+            goods: goods.length > 0 ? goods : [{ weight: 500, length: 10, width: 10, height: 10 }],
             debug: true,
             onChoose(selectedService, selectedTariff, selectedAddress) {
                 if (selectedTariff && selectedTariff.delivery_sum) {
@@ -111,7 +120,6 @@ jQuery(function ($) {
 
                 if (selectedAddress) {
                     $orderDeliveryAddress.val(selectedAddress.formatted);
-
                     if (selectedAddress.city) {
                         $('#cdek_city_code').val(selectedAddress.city);
                     }
@@ -142,6 +150,21 @@ jQuery(function ($) {
     }
 
     function createYandexWidget() {
+        const cartItems = OrderPopupData.cart_items || [];
+
+        let totalWeight = 0;
+        let maxLength = 0;
+        let maxWidth = 0;
+        let maxHeight = 0;
+
+        cartItems.forEach(item => {
+            totalWeight += (item.weight * item.quantity);
+
+            if (item.length > maxLength) maxLength = item.length;
+            if (item.width > maxWidth) maxWidth = item.width;
+            if (item.height > maxHeight) maxHeight = item.height;
+        });
+
         window.YaDelivery.createWidget({
             containerId: 'yandex-delivery-widget',
             params: {
@@ -151,7 +174,14 @@ jQuery(function ($) {
                     "width": "100%"
                 },
                 source_platform_station: OrderPopupData.yandex_platform_id,
-                physical_dims_weight_gross: 10000,
+
+                physical_dims_weight_gross: totalWeight > 0 ? totalWeight : 1000,
+
+                physical_dims_dimensions: {
+                    length: maxLength > 0 ? maxLength : 15,
+                    width: maxWidth > 0 ? maxWidth : 10,
+                    height: maxHeight > 0 ? maxHeight : 5
+                },
                 delivery_price: (price) => price + " руб",
                 delivery_term: 3,
                 show_select_button: false,

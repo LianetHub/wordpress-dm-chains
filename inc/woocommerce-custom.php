@@ -528,7 +528,6 @@ class CustomWooCommerceSetup
     {
         $items = [];
         if (WC()->cart && !WC()->cart->is_empty()) {
-
             $attribute_map = [
                 'pitch'     => 'Шаг',
                 'thickness' => 'Толщина',
@@ -539,45 +538,47 @@ class CustomWooCommerceSetup
                 /** @var WC_Product $product */
                 $product = $cart_item['data'];
 
+                $links_count = isset($cart_item['links_count']) ? intval($cart_item['links_count']) : 1;
+                $quantity = $cart_item['quantity'];
 
-                $weight = $product->get_weight() ? (float)$product->get_weight() * 1000 : 400;
+                $raw_weight = (float)$product->get_weight() ?: 0.01;
+                $raw_length = (float)$product->get_length() ?: 0.1;
+                $raw_width  = (float)$product->get_width() ?: 0.1;
+                $raw_height = (float)$product->get_height() ?: 0.1;
+
+                $total_weight = round($raw_weight * $links_count * 1000, 2);
+                $total_length = ceil($raw_length * $links_count);
+                $total_width  = ceil($raw_width);
+                $total_height = ceil($raw_height);
 
                 $name_parts = [$product->get_name()];
-
                 if ($product->is_type('variation')) {
                     $attributes = $cart_item['variation'];
                     foreach ($attributes as $key => $value) {
                         $taxonomy = str_replace('attribute_', '', $key);
                         $attr_slug = str_replace('pa_', '', $taxonomy);
                         $attr_label = $attribute_map[$attr_slug] ?? wc_attribute_label($taxonomy, $product);
-
                         $name_parts[] = "{$attr_label}: " . ucwords(str_replace('-', ' ', $value));
                     }
                 }
 
-                $links_count = $cart_item['links_count'] ?? 0;
                 if ($links_count > 0) {
                     $name_parts[] = "Кол-во зв.: " . $links_count;
                 }
 
                 $full_name = implode(', ', $name_parts);
-
                 $line_total = $cart_item['line_total'];
-                $quantity = $cart_item['quantity'];
-
-
-                $cost_per_unit = $quantity > 0 ? (float)($line_total / $quantity) : 0;
-
-                $cost_per_unit = round($cost_per_unit, 2);
+                $cost_per_unit = $quantity > 0 ? round((float)($line_total / $quantity), 2) : 0;
 
                 $items[] = [
-                    'name' => $full_name,
-                    'sku' => $product->get_sku(),
-                    'quantity' => $quantity,
+                    'name'          => $full_name,
+                    'sku'           => $product->get_sku(),
+                    'quantity'      => $quantity,
                     'cost_per_unit' => $cost_per_unit,
-                    'length' => $product->get_length() ?: 15,
-                    'width' => $product->get_width() ?: 10,
-                    'height' => $product->get_height() ?: 5,
+                    'weight'        => $total_weight,
+                    'length'        => $total_length,
+                    'width'         => $total_width,
+                    'height'        => $total_height,
                 ];
             }
         }

@@ -24,19 +24,22 @@ class YandexOrderFormatter
 
         $items = [];
         foreach ($cartItems as $item) {
+            $quantity = (int)($item['quantity'] ?? 1);
+
             $items[] = [
                 'title' => mb_substr($item['name'] ?? 'Товар', 0, 128),
-                'quantity' => (int)($item['quantity'] ?? 1),
-                'cost_value' => (string)($item['cost_per_unit'] ?? 0),
+                'quantity' => $quantity,
+                'cost_value' => number_format((float)($item['cost_per_unit'] ?? 0), 2, '.', ''),
                 'cost_currency' => 'RUB',
                 'weight' => (float)(($item['weight'] ?? 1000) / 1000),
-                'pickup_point' => 1,
-                'droppof_point' => 2,
-                'dimensions' => [
+                'size' => [
                     'length' => (float)(($item['length'] ?? 20) / 100),
                     'width'  => (float)(($item['width'] ?? 15) / 100),
                     'height' => (float)(($item['height'] ?? 10) / 100),
-                ]
+                ],
+                'pickup_point' => 1,
+                'dropoff_point' => 2,
+                'droppof_point' => 2,
             ];
         }
 
@@ -47,6 +50,7 @@ class YandexOrderFormatter
         $destPhone = $this->formatPhone($recipientPhoneRaw);
 
         return [
+            'items' => $items,
             'route_points' => [
                 [
                     'point_id' => 1,
@@ -73,7 +77,6 @@ class YandexOrderFormatter
                     ]
                 ]
             ],
-            'items' => $items,
             'client_requirements' => [
                 'taxi_class' => 'express'
             ],

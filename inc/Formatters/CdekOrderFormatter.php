@@ -39,6 +39,10 @@ class CdekOrderFormatter
         $cdekItems = [];
         $firstItemName = 'Заказ с сайта';
 
+        $packageLength = 0;
+        $packageWidth = 0;
+        $packageHeight = 0;
+
         if (!empty($cartItems)) {
             $firstItemName = 'Заказ: ' . ($cartItems[0]['name'] ?? 'Товары');
 
@@ -47,6 +51,7 @@ class CdekOrderFormatter
                 $itemQuantity = (int)($item['quantity'] ?? 1);
                 $itemCostPerUnit = (float)($item['cost_per_unit'] ?? 0);
                 $itemName = $item['name'] ?? 'Товар без названия';
+
                 $finalItemCost = round($itemCostPerUnit * $itemQuantity, 2);
                 $totalWeight += $itemWeight * $itemQuantity;
 
@@ -54,16 +59,17 @@ class CdekOrderFormatter
                     'name' => mb_substr($itemName, 0, 150),
                     'ware_key' => $item['sku'] ?? ('goods-' . ($index + 1)),
                     'payment' => ['value' => 0],
-                    'cost' => $finalItemCost,
+                    'cost' => $itemCostPerUnit,
                     'weight' => $itemWeight,
                     'amount' => $itemQuantity,
                 ];
+
+                $packageLength = max($packageLength, (int)($item['length'] ?? 20));
+                $packageWidth = max($packageWidth, (int)($item['width'] ?? 15));
+                $packageHeight = max($packageHeight, (int)($item['height'] ?? 10));
             }
         }
 
-        $packageLength = (int)($cartItems[0]['length'] ?? 20);
-        $packageWidth = (int)($cartItems[0]['width'] ?? 15);
-        $packageHeight = (int)($cartItems[0]['height'] ?? 10);
         $finalTotalWeight = max(100, $totalWeight);
 
         $orderData = [
@@ -80,9 +86,9 @@ class CdekOrderFormatter
                 [
                     'number' => '1',
                     'weight' => $finalTotalWeight,
-                    'length' => $packageLength,
-                    'width' => $packageWidth,
-                    'height' => $packageHeight,
+                    'length' => $packageLength ?: 20,
+                    'width' => $packageWidth ?: 15,
+                    'height' => $packageHeight ?: 10,
                     'comment' => $firstItemName,
                     'items' => $cdekItems
                 ]
